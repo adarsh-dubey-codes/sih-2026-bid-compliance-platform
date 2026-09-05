@@ -39,7 +39,7 @@ export const ChecklistPage: React.FC = () => {
   const blockingCount = evidenceItems.filter(
     item => item.validationStatus === 'warning' || item.validationStatus === 'error'
   ).length;
-  const preCheckScore = Math.round((verifiedItems / totalItems) * 1000) / 10;
+  const matchScore = Math.round((verifiedItems / totalItems) * 1000) / 10;
 
   const handleOemUpload = async (fileObj?: File) => {
     const uploadedName = fileObj?.name || 'OEM_Valve_Authorization_API6D_2026.pdf';
@@ -95,7 +95,7 @@ export const ChecklistPage: React.FC = () => {
       })
     );
     setIsEntityResolved(true);
-    showToast(`Attached ${deedTypeStr}. Entity discrepancy resolved!`);
+    showToast(`Attached ${deedTypeStr}. Name mismatch resolved.`);
   };
 
   const handlePayEmd = () => {
@@ -119,7 +119,7 @@ export const ChecklistPage: React.FC = () => {
 
   const handleExecuteSigning = async () => {
     if (!dscPin || dscPin.length < 4) {
-      showToast('Please enter your valid 6-digit DSC Hardware PIN');
+      showToast('Please enter your valid 6-digit DSC PIN');
       return;
     }
     try {
@@ -128,34 +128,34 @@ export const ChecklistPage: React.FC = () => {
       await recordDecision(targetBidId, 'APPROVE', 'DSC Digital Signature Affixed by Officer', dscPin);
       setShowDscModal(false);
       setIsSigningCompleted(true);
-      showToast('DSC Digital Signature affixed & stored in PostgreSQL database!');
+      showToast('DSC Digital Signature affixed & stored!');
     } catch {
       setShowDscModal(false);
       setIsSigningCompleted(true);
-      showToast('DSC Digital Signature affixed & sealed.');
+      showToast('DSC Digital Signature affixed & bid sealed.');
     }
   };
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-slate-100 p-4 lg:p-8 space-y-6">
-      {/* Top Banner (Level 1 Title) */}
+      {/* Top Banner Header */}
       <div className="bg-white border border-slate-300 rounded-lg p-5 lg:p-6 shadow-xs space-y-3">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap font-data">
               <span className="text-[11px] px-2 py-0.5 bg-[#0B192C] text-white rounded font-bold">
-                NIT: MoPNG/GAIL/2026/TND-001
+                Tender ID: MoPNG/GAIL/2026/TND-001
               </span>
               <span className="text-[11px] text-slate-500 font-bold">
-                BID ID: #BID-2026-B-99824
+                Bidder ID: #BID-2026-B-99824
               </span>
             </div>
             <h1 className="text-[22px] lg:text-[26px] font-display text-slate-900 font-bold tracking-tight">
-              Statutory Compliance & Evidence Checklist
+              Step 3: Compliance Check
             </h1>
             <div className="flex items-center gap-4 text-slate-600 text-[12px] flex-wrap">
               <div className="flex items-center gap-1.5 font-sans">
-                <span className="font-bold text-slate-900">Apex InfraTech & Global Pipeline Solutions</span>
+                <span className="font-bold text-slate-900">Apex InfraTech Solutions</span>
                 <span className="font-data text-[11px] text-slate-500">(GSTIN: 07AAAAC1234D1Z5)</span>
               </div>
             </div>
@@ -163,25 +163,25 @@ export const ChecklistPage: React.FC = () => {
 
           <div className="flex items-center gap-2 self-start xl:self-auto">
             <div className="p-3 bg-slate-50 border border-slate-300 rounded-md font-data text-right">
-              <div className="text-[10px] text-slate-500 font-bold uppercase">Pre-Check Compliance</div>
-              <div className="text-[18px] font-bold text-slate-900">{preCheckScore}%</div>
+              <div className="text-[10px] text-slate-500 font-bold uppercase">Match Score</div>
+              <div className="text-[18px] font-bold text-slate-900">{matchScore}%</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Primary Focus: Evidence Schedule Table & Resolution Side Panel */}
+      {/* Main Grid: Compliance Table & Issue Resolution Side Panel */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* Table Column (8 Cols) */}
         <div className="xl:col-span-8 bg-white border border-slate-300 rounded-lg overflow-hidden shadow-xs">
           <div className="p-4 bg-slate-100 border-b border-slate-300 flex items-center justify-between">
-            <div className="font-display font-bold text-slate-900 text-[15px]">Mandatory Statutory Evidence Schedule</div>
+            <div className="font-display font-bold text-slate-900 text-[15px]">Compliance Checker Schedule</div>
             <button
-              onClick={() => showToast('Downloading Audit Manifest (PDF + SHA256)...')}
+              onClick={() => showToast('Downloading Audit Report (PDF)...')}
               className="h-8 px-3 rounded-md text-[11px] font-data font-bold bg-[#0B192C] text-white hover:bg-[#1E3A5F] flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[15px]">file_download</span>
-              <span>Audit Manifest</span>
+              <span>Export Report</span>
             </button>
           </div>
 
@@ -191,8 +191,8 @@ export const ChecklistPage: React.FC = () => {
                 <tr className="bg-[#0B192C] text-white font-data text-[11px] uppercase tracking-wider font-semibold border-b border-slate-800">
                   <th className="px-4 py-3 w-24">Clause</th>
                   <th className="px-4 py-3">Requirement</th>
-                  <th className="px-4 py-3">Artifact & Hash</th>
-                  <th className="px-4 py-3">Validation Status</th>
+                  <th className="px-4 py-3">Document</th>
+                  <th className="px-4 py-3">Checker Result</th>
                   <th className="px-4 py-3 text-right w-24">Action</th>
                 </tr>
               </thead>
@@ -211,9 +211,6 @@ export const ChecklistPage: React.FC = () => {
 
                     <td className="px-4 py-3 align-top font-data">
                       <div className="font-bold truncate max-w-[150px]">{item.artifactName}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[170px]">
-                        SHA: {item.shaHash.slice(0, 16)}...
-                      </div>
                     </td>
 
                     <td className="px-4 py-3 align-top">
@@ -230,14 +227,14 @@ export const ChecklistPage: React.FC = () => {
                           onClick={() => navigate('/inspector')}
                           className="text-[#0B192C] hover:underline text-[12px] font-bold inline-flex items-center gap-0.5 font-data"
                         >
-                          <span>Inspect</span>
+                          <span>Review</span>
                         </button>
                       )}
                       {item.actionType === 'resolve' && (
-                        <span className="text-amber-900 text-[11px] font-bold font-data">Action Req</span>
+                        <span className="text-amber-900 text-[11px] font-bold font-data">Needs Action</span>
                       )}
                       {item.actionType === 'upload' && (
-                        <span className="text-red-900 text-[11px] font-bold font-data">Missing Doc</span>
+                        <span className="text-red-900 text-[11px] font-bold font-data">Missing</span>
                       )}
                       {item.actionType === 'renew' && (
                         <button onClick={() => setShowEmdModal(true)} className="text-slate-800 hover:underline text-[12px] font-bold font-data">
@@ -252,17 +249,17 @@ export const ChecklistPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Resolution Side Column (4 Cols) */}
+        {/* Resolution Column (4 Cols) */}
         <div className="xl:col-span-4 space-y-4">
           <div className="bg-white border border-slate-300 rounded-lg p-4 shadow-xs space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-data px-2 py-0.5 rounded font-bold uppercase bg-red-100 border border-red-200 text-red-900">
-                Action Required
+                Missing Document
               </span>
               <span className="font-data text-[11px] text-slate-500">Clause 4.2</span>
             </div>
             <div className="text-[15px] font-display font-bold text-slate-900">OEM Valve Authorization (Form 8-B)</div>
-            <p className="text-[12px] text-slate-600">Upload manufacturer authorization form for Envelope B.</p>
+            <p className="text-[12px] text-slate-600">Upload manufacturer authorization letter.</p>
             {!isOemUploaded ? (
               <button
                 onClick={() => handleOemUpload()}
@@ -272,7 +269,7 @@ export const ChecklistPage: React.FC = () => {
               </button>
             ) : (
               <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded text-[12px] text-emerald-900 font-bold font-data">
-                ✓ Form 8-B Uploaded & Verified
+                ✓ Form 8-B Verified
               </div>
             )}
           </div>
@@ -280,21 +277,21 @@ export const ChecklistPage: React.FC = () => {
           <div className="bg-white border border-slate-300 rounded-lg p-4 shadow-xs space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-data px-2 py-0.5 rounded font-bold uppercase bg-amber-100 border border-amber-200 text-amber-900">
-                Discrepancy Resolution
+                Issue Found
               </span>
               <span className="font-data text-[11px] text-slate-500">Clause 4.1</span>
             </div>
-            <div className="text-[15px] font-display font-bold text-slate-900">Technical Credential Name Mismatch</div>
+            <div className="text-[15px] font-display font-bold text-slate-900">Name Mismatch Found</div>
             {!isEntityResolved ? (
               <div className="space-y-2">
                 <div className="bg-slate-50 p-2.5 rounded border border-slate-300 text-[12px] space-y-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" checked={entityResolutionType === 'subsidiary'} onChange={() => setEntityResolutionType('subsidiary')} />
-                    <span>Wholly owned subsidiary (INC-22)</span>
+                    <span>Wholly owned subsidiary proof</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" checked={entityResolutionType === 'consortium'} onChange={() => setEntityResolutionType('consortium')} />
-                    <span>Consortium JV (Annexure-IV)</span>
+                    <span>Consortium JV Agreement</span>
                   </label>
                 </div>
                 <button onClick={handleResolveEntity} className="w-full py-2 bg-white border border-slate-800 text-slate-900 rounded-md text-[12px] font-bold font-data hover:bg-slate-50">
@@ -303,7 +300,7 @@ export const ChecklistPage: React.FC = () => {
               </div>
             ) : (
               <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded text-[12px] text-emerald-900 font-bold font-data">
-                ✓ Statutory Legal Deed Linked
+                ✓ Name Mismatch Resolved
               </div>
             )}
           </div>
@@ -313,24 +310,24 @@ export const ChecklistPage: React.FC = () => {
       {/* Sticky Execution Footer */}
       <div className="sticky bottom-0 z-30 bg-white border-t border-slate-300 shadow-md px-6 py-3 flex items-center justify-between gap-3">
         <div className="text-[13px] font-bold text-slate-900 font-data">
-          Pre-Check Score: {preCheckScore}% Compliant
+          Match Score: {matchScore}% Verified
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => showToast('Progress saved.')} className="px-4 py-2 bg-slate-100 text-[12px] rounded-md font-bold font-data border border-slate-300">
+          <button onClick={() => showToast('Draft saved.')} className="px-4 py-2 bg-slate-100 text-[12px] rounded-md font-bold font-data border border-slate-300">
             Save Draft
           </button>
           <button disabled={blockingCount > 0 || isSigningCompleted} onClick={() => setShowDscModal(true)} className="px-5 py-2 bg-[#0B192C] text-white text-[12px] font-bold font-data rounded-md disabled:bg-slate-400">
-            {isSigningCompleted ? 'Signed & Sealed' : 'Affix Class 3 DSC Token'}
+            {isSigningCompleted ? 'Signed & Sealed' : 'Approve & Sign Bid'}
           </button>
         </div>
       </div>
 
-      <Modal isOpen={showDscModal} onClose={() => setShowDscModal(false)} title="Affix Hardware DSC Token" icon="key">
+      <Modal isOpen={showDscModal} onClose={() => setShowDscModal(false)} title="Approve & Sign Bid" icon="key">
         <div className="space-y-3">
-          <p className="text-[12px] text-slate-600">Enter your 6-digit USB Hardware Token PIN to sign the tender package with your SHA-256 Certificate.</p>
+          <p className="text-[12px] text-slate-600">Enter your 6-digit Officer DSC PIN to approve & sign the tender package.</p>
           <input type="password" maxLength={6} value={dscPin} onChange={(e) => setDscPin(e.target.value)} className="w-full h-10 px-3 border rounded text-center font-data text-lg bg-slate-50" placeholder="******" />
           <button onClick={handleExecuteSigning} className="w-full py-2.5 bg-[#0B192C] text-white rounded-md text-[12px] font-bold font-data">
-            Sign & Seal Bid Package
+            Approve & Sign Bid Package
           </button>
         </div>
       </Modal>

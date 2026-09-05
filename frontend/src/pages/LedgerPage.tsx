@@ -27,12 +27,12 @@ export const LedgerPage: React.FC = () => {
           blockRef: `#BLK-${log.id.slice(0, 6)}`,
           category: log.action || 'AUDIT_LOGGED',
           actorName: log.actor || 'System Engine',
-          actorTitle: 'Sovereign Compliance Node',
+          actorTitle: 'Compliance Node',
           actorFingerprint: `SHA256: ${log.sha256_root.slice(0, 16)}`,
           actionTitle: `${log.action} on ${log.entity}`,
           actionDetails: JSON.stringify(log.metadata || {}),
           sha256Root: log.sha256_root.slice(0, 12) + '...',
-          statusBadge: 'Verified Database Record',
+          statusBadge: 'Verified Record',
           statusType: log.action.includes('REJECT') || log.action.includes('DISCREPANCY') ? 'error' : 'success'
         }));
         setAuditEvents(formatted);
@@ -49,18 +49,18 @@ export const LedgerPage: React.FC = () => {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-slate-100 p-4 lg:p-8 space-y-6">
-      {/* Top Banner (Level 1 Title) */}
+      {/* Top Banner */}
       <div className="bg-white border border-slate-300 rounded-lg p-5 lg:p-6 shadow-xs space-y-4">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div>
             <div className="text-[11px] font-data font-bold uppercase text-slate-500 tracking-wider">
-              SECTION 65B IT ACT 2000 CERTIFIABLE NON-REPUDIATION AUDIT TRAIL
+              STEP 5: AUDIT TRAIL & NON-REPUDIATION RECORD
             </div>
             <h1 className="text-[22px] lg:text-[26px] font-display text-slate-900 font-bold mt-1 tracking-tight">
-              Cryptographic Audit Ledger & Integrity Testbed
+              Audit Trail & Integrity Log
             </h1>
             <div className="text-[12px] text-slate-600 font-sans mt-0.5">
-              Distributed Provenance for NIT MoPNG/GAIL/2026/TND-001
+              Complete chronological audit trail for Tender MoPNG/GAIL/2026/TND-001
             </div>
           </div>
 
@@ -75,54 +75,34 @@ export const LedgerPage: React.FC = () => {
               onClick={() => setShowVigilanceModal(true)}
               className="px-3.5 h-8 bg-white border border-slate-300 text-slate-900 font-data text-[11px] font-bold rounded-md hover:bg-slate-50"
             >
-              Print Vigilance Cert
+              Print Audit Certificate
             </button>
             <button
-              onClick={() => showToast('Exporting Notarized Package (SHA256 Manifest + DSC Cert)...')}
+              onClick={() => showToast('Exporting Package...')}
               className="px-4 h-8 bg-[#0B192C] text-white font-data text-[11px] font-bold rounded-md hover:bg-[#1E3A5F]"
             >
-              Export Package (ZIP + DSC)
+              Export Audit Package
             </button>
-          </div>
-        </div>
-
-        {/* Traceability Pipeline Flow */}
-        <div className="p-3.5 bg-[#0B192C] text-white rounded-md border border-slate-800 space-y-1.5">
-          <div className="text-[10px] font-data font-bold text-amber-400 uppercase tracking-widest">
-            END-TO-END CRYPTOGRAPHIC TRACEABILITY PIPELINE
-          </div>
-          <div className="flex items-center justify-between flex-wrap gap-2 text-[10px] font-data pt-1 border-t border-slate-800">
-            <span className="px-2 py-0.5 bg-slate-900 rounded border border-slate-700">1. Requirement</span>
-            <span className="text-slate-500">→</span>
-            <span className="px-2 py-0.5 bg-slate-900 rounded border border-slate-700">2. Submitted Evidence</span>
-            <span className="text-slate-500">→</span>
-            <span className="px-2 py-0.5 bg-slate-900 rounded border border-slate-700">3. Registry Verification</span>
-            <span className="text-slate-500">→</span>
-            <span className="px-2 py-0.5 bg-slate-900 rounded border border-slate-700">4. Rule Decision</span>
-            <span className="text-slate-500">→</span>
-            <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded border border-amber-500/40 font-bold">
-              5. Sealed Audit Record (SHA-256)
-            </span>
           </div>
         </div>
       </div>
 
       {/* Main Operations Grid */}
       <div className="space-y-6">
-        {/* Off-Chain Asset Verification Table */}
+        {/* Document Hash Verification Table */}
         <div className="bg-white rounded-lg border border-slate-300 overflow-hidden shadow-xs">
           <div className="p-4 bg-slate-100 border-b border-slate-300 font-display font-bold text-[#0B192C] text-[15px]">
-            Off-Chain Document Tamper Testbed & SHA-256 Hashing Subsystem
+            Document Hash Verification
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse font-sans text-[12px]">
               <thead>
                 <tr className="bg-[#0B192C] text-white font-data text-[11px] uppercase tracking-wider font-semibold border-b border-slate-800">
-                  <th className="p-3">Evidence Asset Name</th>
-                  <th className="p-3">Immutable Block Hash</th>
-                  <th className="p-3">Recomputed Off-Chain Hash</th>
-                  <th className="p-3">Quorum Consensus</th>
-                  <th className="p-3 text-right">Audit Status</th>
+                  <th className="p-3">Document Name</th>
+                  <th className="p-3">Stored Hash</th>
+                  <th className="p-3">Current Hash</th>
+                  <th className="p-3">Consensus</th>
+                  <th className="p-3 text-right">Integrity Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
@@ -135,7 +115,7 @@ export const LedgerPage: React.FC = () => {
                     <td className="p-3 text-right">
                       <StatusBadge
                         status={a.status === 'tampered' ? 'error' : 'verified'}
-                        label={a.status === 'tampered' ? 'TAMPERING INTERCEPTED' : 'INTEGRITY VERIFIED'}
+                        label={a.status === 'tampered' ? 'TAMPERED' : 'VERIFIED'}
                       />
                     </td>
                   </tr>
@@ -149,7 +129,7 @@ export const LedgerPage: React.FC = () => {
         <div className="bg-white rounded-lg border border-slate-300 overflow-hidden shadow-xs">
           <div className="p-4 bg-slate-100 border-b border-slate-300 flex justify-between items-center">
             <span className="font-display font-bold text-[#0B192C] text-[15px]">
-              Chronological Audit Event Stream & Block Transcripts
+              Audit Event Stream
             </span>
             <select
               value={selectedFilter}
@@ -157,8 +137,8 @@ export const LedgerPage: React.FC = () => {
               className="text-[11px] font-data border border-slate-300 rounded px-2.5 py-1 bg-white font-bold"
             >
               <option value="all">All Audit Events</option>
-              <option value="ruleset">Ruleset Committed</option>
-              <option value="bidder">Bidder Submissions</option>
+              <option value="ruleset">Ruleset Events</option>
+              <option value="bidder">Bidder Events</option>
             </select>
           </div>
           <div className="overflow-x-auto">
@@ -168,9 +148,9 @@ export const LedgerPage: React.FC = () => {
                   <th className="p-3">Timestamp (IST)</th>
                   <th className="p-3">Block Ref</th>
                   <th className="p-3">Event Category</th>
-                  <th className="p-3">Actor & Fingerprint</th>
+                  <th className="p-3">Actor</th>
                   <th className="p-3">Action Details</th>
-                  <th className="p-3 text-right">SHA-256 Root</th>
+                  <th className="p-3 text-right">Hash</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white font-sans">
@@ -197,7 +177,7 @@ export const LedgerPage: React.FC = () => {
       <Modal
         isOpen={showBlockModal}
         onClose={() => setShowBlockModal(false)}
-        title="Ledger Block Envelope"
+        title="Block Header Envelope"
         icon="view_in_ar"
       >
         <pre className="font-data text-[11px] bg-slate-900 text-slate-200 p-3.5 rounded border border-slate-700 overflow-x-auto">
@@ -206,17 +186,16 @@ export const LedgerPage: React.FC = () => {
   "database": "Supabase PostgreSQL",
   "previous_hash": "7d21bb0934ef00192a8bca0194857dfa4e01928374a",
   "data_hash": "8c34f9a03d81b9e248910ae821fba01945829104fa2",
-  "consensus": "Raft 2.5 (4/4 Sovereign Nodes Verified)",
   "timestamp": ${Date.now()}
 }`}
         </pre>
       </Modal>
 
-      {/* Vigilance Certificate Modal */}
+      {/* Audit Certificate Modal */}
       <Modal
         isOpen={showVigilanceModal}
         onClose={() => setShowVigilanceModal(false)}
-        title="Section 65B Statutory Vigilance Certificate"
+        title="Section 65B Audit Certificate"
         icon="gavel"
       >
         <div className="space-y-2 text-[12px]">
