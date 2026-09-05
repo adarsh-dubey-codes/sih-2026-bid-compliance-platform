@@ -5,12 +5,14 @@ export interface CardProps {
   subtitle?: string;
   value?: string | number;
   icon?: string;
+  iconColor?: string;
   footer?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
   titleClassName?: string;
   valueClassName?: string;
   badge?: React.ReactNode;
+  onClick?: () => void;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -18,38 +20,45 @@ export const Card: React.FC<CardProps> = ({
   subtitle,
   value,
   icon,
+  iconColor = 'text-[#4527A0]',
   footer,
   children,
   className = '',
-  titleClassName = 'text-slate-500',
-  valueClassName = 'text-slate-900',
+  titleClassName = 'text-[#66627A]',
+  valueClassName = 'text-[#17152B]',
   badge,
+  onClick,
 }) => {
   return (
-    <div className={`bg-white border border-slate-300 p-4 rounded-lg flex flex-col justify-between shadow-xs ${className}`}>
+    <div
+      onClick={onClick}
+      className={`bg-white border border-[#E5E2EC] p-5 rounded-xl flex flex-col justify-between transition-colors ${
+        onClick ? 'cursor-pointer hover:border-[#4527A0]' : ''
+      } ${className}`}
+    >
       <div>
-        {(title || icon) && (
-          <div className="flex items-start justify-between">
-            <div className="space-y-0.5">
+        {(title || icon || value !== undefined) && (
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1 min-w-0">
               {title && (
-                <div className={`text-[11px] uppercase tracking-wider font-semibold font-sans ${titleClassName}`}>
+                <div className={`text-[12px] font-medium tracking-wide uppercase ${titleClassName}`}>
                   {title}
                 </div>
               )}
               {value !== undefined && (
-                <div className={`text-[28px] font-bold font-data tracking-tight ${valueClassName}`}>
+                <div className={`text-[26px] font-bold leading-tight tracking-tight ${valueClassName}`}>
                   {value}
                 </div>
               )}
               {subtitle && (
-                <div className="text-[12px] text-slate-600 mt-0.5">{subtitle}</div>
+                <div className="text-[13px] text-[#66627A] font-normal leading-normal">{subtitle}</div>
               )}
             </div>
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
               {icon && (
-                <span className={`material-symbols-outlined text-[24px] ${titleClassName}`}>
-                  {icon}
-                </span>
+                <div className={`w-9 h-9 rounded-lg bg-[#F1EFF7] flex items-center justify-center ${iconColor}`}>
+                  <span className="material-symbols-outlined text-[20px]">{icon}</span>
+                </div>
               )}
               {badge}
             </div>
@@ -59,7 +68,7 @@ export const Card: React.FC<CardProps> = ({
       </div>
 
       {footer && (
-        <div className="font-data text-[11px] pt-2 mt-2 border-t border-slate-200 flex items-center gap-1 text-slate-600">
+        <div className="text-[12px] pt-3 mt-3 border-t border-[#E5E2EC] flex items-center justify-between text-[#66627A]">
           {footer}
         </div>
       )}

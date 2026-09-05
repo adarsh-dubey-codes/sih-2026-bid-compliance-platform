@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { testSupabaseConnection, isSupabaseConfigured } from '../lib/supabase';
 import type { SupabaseConnectionStatus } from '../lib/supabase';
-
+import { Card } from '../components/common/Card';
 
 export const SupabaseTestPage: React.FC = () => {
   const [status, setStatus] = useState<SupabaseConnectionStatus | null>(null);
@@ -15,108 +15,95 @@ export const SupabaseTestPage: React.FC = () => {
   };
 
   useEffect(() => {
-    runDiagnostics();
+    let mounted = true;
+    testSupabaseConnection().then((res) => {
+      if (mounted) {
+        setStatus(res);
+        setIsLoading(false);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-slate-100 p-4 lg:p-8 space-y-6 font-sans">
-      {/* Top Banner */}
-      <div className="bg-white border border-slate-300 rounded-lg p-5 lg:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 font-data">
-              <span className="material-symbols-outlined text-[16px] text-[#0B192C]">dns</span>
-              <span>SUPABASE INFRASTRUCTURE DIAGNOSTICS</span>
-            </div>
-            <h1 className="text-[22px] lg:text-[26px] font-display text-slate-900 font-bold mt-1 tracking-tight">
-              Supabase Client & Auth Diagnostic Console
-            </h1>
-            <div className="text-[12px] text-slate-600 font-sans mt-0.5">
-              Live validation for PostgreSQL Database, Auth Layer, and Cloud Storage Bucket Access
-            </div>
-          </div>
-
-          <button
-            onClick={runDiagnostics}
-            disabled={isLoading}
-            className="px-4 h-9 bg-[#0B192C] text-white font-data text-[11px] font-bold rounded hover:bg-[#1E3A5F] flex items-center gap-1.5 self-start sm:self-auto"
-          >
-            <span className={`material-symbols-outlined text-[16px] ${isLoading ? 'animate-spin' : ''}`}>
-              refresh
-            </span>
-            <span>{isLoading ? 'Running Diagnostics...' : 'Re-Run Diagnostics'}</span>
-          </button>
+    <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto font-sans">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#17152B] tracking-tight">
+            Database & Service Diagnostics
+          </h1>
+          <p className="text-[14px] text-[#66627A] mt-1">
+            Live validation for PostgreSQL database, Supabase Auth layer, and cloud storage bucket.
+          </p>
         </div>
+
+        <button
+          onClick={runDiagnostics}
+          disabled={isLoading}
+          className="px-4 py-2 bg-[#4527A0] text-white font-medium text-[13px] rounded-lg hover:bg-[#5E35B1] transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+        >
+          <span className={`material-symbols-outlined text-[17px] ${isLoading ? 'animate-spin' : ''}`}>
+            refresh
+          </span>
+          <span>{isLoading ? 'Running Diagnostics...' : 'Re-Run Diagnostics'}</span>
+        </button>
       </div>
 
       {/* Diagnostics Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Environment Credentials Card */}
-        <div className="bg-white border border-slate-300 rounded-lg p-4 space-y-2 shadow-xs">
-          <div className="text-[11px] font-data font-bold uppercase text-slate-500">1. Environment Setup</div>
-          <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${isSupabaseConfigured ? 'bg-emerald-600' : 'bg-amber-500 animate-pulse'}`}></div>
-            <span className="font-bold text-slate-900 text-[14px]">
-              {isSupabaseConfigured ? 'Keys Configured' : 'Placeholder Keys'}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-600 font-data">
-            VITE_SUPABASE_URL: {import.meta.env.VITE_SUPABASE_URL ? 'Loaded' : 'Missing'}
-          </p>
-        </div>
+        <Card
+          title="1. Environment Config"
+          value={isSupabaseConfigured ? 'Configured' : 'Missing Keys'}
+          subtitle={`URL: ${import.meta.env.VITE_SUPABASE_URL ? 'Loaded' : 'Default'}`}
+          icon="settings"
+          iconColor="text-[#4527A0]"
+          titleClassName="text-[#66627A]"
+          valueClassName={isSupabaseConfigured ? 'text-[#059669] text-[20px]' : 'text-[#D97706] text-[20px]'}
+        />
 
-        {/* Database Card */}
-        <div className="bg-white border border-slate-300 rounded-lg p-4 space-y-2 shadow-xs">
-          <div className="text-[11px] font-data font-bold uppercase text-slate-500">2. PostgreSQL Database</div>
-          <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${status?.dbConnected ? 'bg-emerald-600' : 'bg-red-600'}`}></div>
-            <span className="font-bold text-slate-900 text-[14px]">
-              {status?.dbConnected ? 'Client Active' : 'Disconnected'}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-600 font-data truncate">
-            {status?.details.dbMessage || 'Testing connection...'}
-          </p>
-        </div>
+        <Card
+          title="2. PostgreSQL Database"
+          value={status?.dbConnected ? 'Connected' : 'Offline'}
+          subtitle={status?.details.dbMessage || 'Testing connection...'}
+          icon="dns"
+          iconColor={status?.dbConnected ? 'text-[#059669]' : 'text-[#DC2626]'}
+          titleClassName="text-[#66627A]"
+          valueClassName={status?.dbConnected ? 'text-[#059669] text-[20px]' : 'text-[#DC2626] text-[20px]'}
+        />
 
-        {/* Auth Layer Card */}
-        <div className="bg-white border border-slate-300 rounded-lg p-4 space-y-2 shadow-xs">
-          <div className="text-[11px] font-data font-bold uppercase text-slate-500">3. Authentication Layer</div>
-          <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${status?.authConnected ? 'bg-emerald-600' : 'bg-red-600'}`}></div>
-            <span className="font-bold text-slate-900 text-[14px]">
-              {status?.authConnected ? 'Auth Active' : 'Unverified'}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-600 font-data truncate">
-            {status?.details.authMessage || 'Checking auth session...'}
-          </p>
-        </div>
+        <Card
+          title="3. Auth Layer"
+          value={status?.authConnected ? 'Active' : 'Unverified'}
+          subtitle={status?.details.authMessage || 'Checking session...'}
+          icon="security"
+          iconColor={status?.authConnected ? 'text-[#059669]' : 'text-[#DC2626]'}
+          titleClassName="text-[#66627A]"
+          valueClassName={status?.authConnected ? 'text-[#059669] text-[20px]' : 'text-[#DC2626] text-[20px]'}
+        />
 
-        {/* Storage Card */}
-        <div className="bg-white border border-slate-300 rounded-lg p-4 space-y-2 shadow-xs">
-          <div className="text-[11px] font-data font-bold uppercase text-slate-500">4. Supabase Storage</div>
-          <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${status?.storageConnected ? 'bg-emerald-600' : 'bg-red-600'}`}></div>
-            <span className="font-bold text-slate-900 text-[14px]">
-              {status?.storageConnected ? 'Storage Ready' : 'Unreachable'}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-600 font-data truncate">
-            {status?.details.storageMessage || 'Checking bucket access...'}
-          </p>
-        </div>
+        <Card
+          title="4. Cloud Storage"
+          value={status?.storageConnected ? 'Ready' : 'Pending'}
+          subtitle={status?.details.storageMessage || 'Checking bucket access...'}
+          icon="cloud"
+          iconColor={status?.storageConnected ? 'text-[#059669]' : 'text-[#DC2626]'}
+          titleClassName="text-[#66627A]"
+          valueClassName={status?.storageConnected ? 'text-[#059669] text-[20px]' : 'text-[#DC2626] text-[20px]'}
+        />
       </div>
 
-      {/* Connection Instructions Box */}
-      <div className="bg-white border border-slate-300 rounded-lg p-5 shadow-xs space-y-3 font-data text-[12px]">
-        <div className="font-display text-[15px] font-bold text-slate-900">
-          Supabase Integration Setup Guide
-        </div>
-        <p className="text-slate-700">
-          To connect this application to your live Supabase cloud project, update your environment variables in <code className="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">frontend/.env</code>:
+      {/* Integration Guide Box */}
+      <div className="bg-white border border-[#E5E2EC] rounded-xl p-5 space-y-3">
+        <h2 className="text-[15px] font-semibold text-[#17152B]">
+          Supabase Cloud Integration Guide
+        </h2>
+        <p className="text-[13px] text-[#66627A]">
+          To connect to your live Supabase project, populate your credentials in <code className="bg-[#F8F9FC] text-[#17152B] font-data px-1.5 py-0.5 rounded border border-[#E5E2EC]">frontend/.env</code>:
         </p>
-        <pre className="bg-[#0B192C] text-slate-200 p-3.5 rounded border border-slate-800 text-[11px] overflow-x-auto">
+        <pre className="bg-[#17152B] text-white p-4 rounded-lg text-[12px] font-data overflow-x-auto">
 {`VITE_API_BASE_URL=http://localhost:8000/api
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`}

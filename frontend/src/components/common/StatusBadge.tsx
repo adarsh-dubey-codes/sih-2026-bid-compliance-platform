@@ -1,59 +1,72 @@
 import React from 'react';
 
 export interface StatusBadgeProps {
-  status: 'verified' | 'warning' | 'error' | 'expired' | 'success' | 'notice' | 'critical' | 'low' | 'medium';
-  label: string;
+  status: 'verified' | 'warning' | 'error' | 'expired' | 'success' | 'notice' | 'critical' | 'low' | 'medium' | 'pending' | 'compliant' | 'non-compliant' | string;
+  label?: string;
   icon?: string;
   className?: string;
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label, icon, className = '' }) => {
+  const normalized = status.toLowerCase();
+
   const getBadgeStyle = () => {
-    switch (status) {
+    switch (normalized) {
       case 'verified':
       case 'success':
+      case 'compliant':
       case 'low':
-        return 'bg-emerald-950/10 border-emerald-700/40 text-emerald-800 font-semibold';
+      case 'passed':
+        return 'bg-[#ECFDF5] border-[#A7F3D0] text-[#059669] font-semibold';
       case 'warning':
       case 'medium':
       case 'notice':
-        return 'bg-amber-950/10 border-amber-600/40 text-amber-900 font-semibold';
+      case 'pending':
+        return 'bg-[#FFFBEB] border-[#FDE68A] text-[#D97706] font-semibold';
       case 'error':
       case 'critical':
       case 'expired':
-        return 'bg-red-950/10 border-red-700/40 text-red-900 font-bold';
+      case 'failed':
+      case 'non-compliant':
+        return 'bg-[#FEF2F2] border-[#FECACA] text-[#DC2626] font-bold';
       default:
-        return 'bg-slate-100 border-slate-300 text-slate-700 font-medium';
+        return 'bg-[#F1EFF7] border-[#E5E2EC] text-[#5E35B1] font-medium';
     }
   };
 
   const getDefaultIcon = () => {
-    switch (status) {
+    switch (normalized) {
       case 'verified':
       case 'success':
+      case 'compliant':
       case 'low':
-        return 'verified';
+      case 'passed':
+        return 'check_circle';
       case 'warning':
       case 'medium':
-        return 'warning';
+      case 'notice':
+      case 'pending':
+        return 'schedule';
       case 'error':
       case 'critical':
-        return 'gavel';
       case 'expired':
-        return 'history';
+      case 'failed':
+      case 'non-compliant':
+        return 'cancel';
       default:
         return 'info';
     }
   };
 
-  const activeIcon = icon || getDefaultIcon();
+  const activeIcon = icon !== undefined ? icon : getDefaultIcon();
+  const displayLabel = label || status;
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] uppercase tracking-wider ${getBadgeStyle()} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-[11px] tracking-wide uppercase ${getBadgeStyle()} ${className}`}
     >
       {activeIcon && <span className="material-symbols-outlined text-[13px] shrink-0">{activeIcon}</span>}
-      <span>{label}</span>
+      <span>{displayLabel}</span>
     </span>
   );
 };

@@ -1,77 +1,74 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: 'IBM Plex Serif', Georgia, serif;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Institutional Government Color Tokens */
-  --color-gov-navy: #0F2537;
-  --color-gov-blue: #1E3A5F;
-  --color-nic-blue: #0A2540;
-  --color-nic-[#0A2540]: #0A2540;
-  --color-gem-header: #061B2E;
+  /* Bid Vishwas Institutional Deep Purple Brand Tokens */
+  --color-brand-primary: #4527A0;
+  --color-brand-secondary: #5E35B1;
+  --color-brand-accent: #6A3FC7;
+  --color-brand-bg: #F8F9FC;
+  --color-text-primary: #17152B;
+  --color-text-secondary: #66627A;
+  --color-border-subtle: #E5E2EC;
 
-  --color-success-dark: #064E3B;
-  --color-success-bg: #ECFDF5;
-  --color-success-border: #A7F3D0;
+  /* Semantic Status Tokens (Flat & Calm) */
+  --color-status-success: #059669;
+  --color-status-success-bg: #ECFDF5;
+  --color-status-success-border: #A7F3D0;
 
-  --color-warning-dark: #78350F;
-  --color-warning-bg: #FFFBEB;
-  --color-warning-border: #FDE68A;
+  --color-status-warning: #D97706;
+  --color-status-warning-bg: #FFFBEB;
+  --color-status-warning-border: #FDE68A;
 
-  --color-danger-dark: #7F1D1D;
-  --color-danger-bg: #FEF2F2;
-  --color-danger-border: #FECACA;
+  --color-status-danger: #DC2626;
+  --color-status-danger-bg: #FEF2F2;
+  --color-status-danger-border: #FECACA;
 }
 
 @layer base {
   html, body {
     margin: 0;
     padding: 0;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #F1F5F9;
-    color: #0F172A;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #F8F9FC;
+    color: #17152B;
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, .font-serif-gov {
-    font-family: 'IBM Plex Serif', Georgia, serif;
+  h1, h2, h3, h4, h5, h6 {
+    color: #17152B;
+    font-weight: 600;
   }
 }
 
-/* Institutional Table & Scrollbar Utilities */
+/* Subtle flat scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #E2E8F0;
+  background: #F1EFF7;
 }
 ::-webkit-scrollbar-thumb {
-  background: #94A3B8;
+  background: #C4BFD3;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748B;
+  background: #9D96B3;
 }
 
-/* Custom Utilities for GovTech System */
-.font-display {
-  font-family: 'IBM Plex Serif', Georgia, serif;
-}
-
+/* Custom Utilities */
 .font-data {
   font-family: 'JetBrains Mono', monospace;
 }
 
-.institutional-header-gradient {
-  background: linear-gradient(180deg, #091C2E 0%, #0D263E 100%);
-}
-
-.gov-card-border {
-  border: 1px solid #CBD5E1;
-  border-radius: 8px;
+.flat-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E2EC;
+  border-radius: 12px;
 }

@@ -60,8 +60,8 @@ export async function testSupabaseConnection(): Promise<SupabaseConnectionStatus
       status.dbConnected = true;
       status.details.dbMessage = 'Successfully connected & queried PostgreSQL database';
     }
-  } catch (err: any) {
-    status.details.dbMessage = err.message || 'Database connection test failed';
+  } catch (err: unknown) {
+    status.details.dbMessage = err instanceof Error ? err.message : 'Database connection test failed';
   }
 
   // 2. Verify Authentication Connection
@@ -75,8 +75,8 @@ export async function testSupabaseConnection(): Promise<SupabaseConnectionStatus
         ? `Authenticated as ${data.session.user.email}`
         : 'Supabase Auth Service Active (No active session)';
     }
-  } catch (err: any) {
-    status.details.authMessage = err.message || 'Auth connection test failed';
+  } catch (err: unknown) {
+    status.details.authMessage = err instanceof Error ? err.message : 'Auth connection test failed';
   }
 
   // 3. Verify Storage Bucket
@@ -92,8 +92,8 @@ export async function testSupabaseConnection(): Promise<SupabaseConnectionStatus
         ? 'Bucket "bid-documents" verified & accessible'
         : `Connected (${buckets?.length || 0} buckets found)`;
     }
-  } catch (err: any) {
-    status.details.storageMessage = err.message || 'Storage connection test failed';
+  } catch (err: unknown) {
+    status.details.storageMessage = err instanceof Error ? err.message : 'Storage connection test failed';
   }
 
   return status;

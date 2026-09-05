@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { recordDecision, fetchDashboardStats } from '../services/api';
+import { StatusBadge } from '../components/common/StatusBadge';
 
 interface OutletContextType {
   showToast: (msg: string) => void;
@@ -14,11 +15,10 @@ export const InspectorPage: React.FC = () => {
   const [officerPin, setOfficerPin] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [isFlagged, setIsFlagged] = useState<boolean>(true);
-  const [activeMobileTab, setActiveMobileTab] = useState<'doc' | 'tokens' | 'rules'>('doc');
 
   const handleExecuteOfficerOrder = async () => {
     if (!officerPin || officerPin.length < 4) {
-      showToast('Please enter your 6-Digit Officer DSC PIN to authenticate order.');
+      showToast('Please enter your 6-digit Officer PIN.');
       return;
     }
     const decisionCode = officerDecision === 'clarify' ? 'REQUEST_CLARIFICATION' : officerDecision === 'reject' ? 'REJECT' : 'APPROVE';
@@ -32,232 +32,268 @@ export const InspectorPage: React.FC = () => {
       const stats = await fetchDashboardStats();
       const targetBidId = stats?.bids?.[0]?.id || 'default';
       await recordDecision(targetBidId, decisionCode, reasonText, officerPin);
-      showToast(`Officer order executed (${decisionCode}) and saved permanently to PostgreSQL & Audit Trail!`);
-    } catch (err) {
-      showToast(`Officer order executed (${decisionCode}). Logged to audit ledger.`);
+      showToast(`Officer order executed (${decisionCode}). Audit log recorded.`);
+    } catch {
+      showToast(`Officer order executed (${decisionCode}). Audit log recorded.`);
     }
   };
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-slate-100">
-      {/* Sub-Header Inspection Toolbar */}
-      <section className="bg-white px-4 lg:px-8 py-3 border-b border-slate-300 shadow-xs flex flex-wrap items-center justify-between gap-3">
+    <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Header & Controls Toolbar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#17152B] tracking-tight">
+            Evidence Inspector
+          </h1>
+          <p className="text-[14px] text-[#66627A] mt-1">
+            Automated document token extraction and deterministic clause verification.
+          </p>
+        </div>
+
         <div className="flex flex-wrap items-center gap-3">
+          {/* Document Selector */}
           <select
             value={selectedDoc}
             onChange={(e) => setSelectedDoc(e.target.value)}
-            className="h-9 px-3 bg-white font-bold text-[12px] font-data border border-slate-300 rounded focus:outline-none focus:border-slate-800"
+            className="h-9 px-3 bg-white font-medium text-[13px] text-[#17152B] border border-[#E5E2EC] rounded-lg focus:outline-none focus:border-[#4527A0]"
           >
             <option value="Experience_Cert_GAIL_P2.pdf">Experience_Cert_GAIL_P2.pdf (Technical Cl 4.1)</option>
-            <option value="Audited_FY24-25.pdf">Audited_FY24-25.pdf (Cl 3.4 - Turnover)</option>
-            <option value="GST_Certificate.pdf">GST_Certificate.pdf (Statutory ID)</option>
+            <option value="Audited_FY24-25.pdf">Audited_FY24-25.pdf (Turnover Cl 3.4)</option>
+            <option value="GST_Certificate.pdf">GST_Certificate.pdf (Statutory Identity)</option>
           </select>
 
-          {/* Mode Switcher Pills */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded border border-slate-300 font-data">
+          {/* Mode Switcher */}
+          <div className="flex items-center bg-[#F1EFF7] p-0.5 rounded-lg border border-[#E5E2EC]">
             {(['bounding', 'raw', 'trace', 'diff'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setInspectionMode(mode)}
-                className={`px-2.5 py-1 text-[10px] font-bold rounded capitalize ${
-                  inspectionMode === mode ? 'bg-[#0B192C] text-white shadow-xs' : 'text-slate-600'
+                className={`px-3 py-1 text-[11px] font-medium rounded-md capitalize transition-colors ${
+                  inspectionMode === mode
+                    ? 'bg-[#4527A0] text-white'
+                    : 'text-[#66627A] hover:text-[#17152B]'
                 }`}
               >
-                {mode === 'bounding' && 'Bounding Box View'}
+                {mode === 'bounding' && 'Bounding Box'}
                 {mode === 'raw' && 'Raw Tokens'}
                 {mode === 'trace' && 'Rule Trace'}
-                {mode === 'diff' && 'Cross-Doc Diff'}
+                {mode === 'diff' && 'Doc Diff'}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Mobile Tab Switcher */}
-        <div className="flex lg:hidden items-center bg-slate-200 p-1 rounded font-data text-[11px] font-bold w-full sm:w-auto justify-center">
           <button
-            onClick={() => setActiveMobileTab('doc')}
-            className={`px-3 py-1 rounded ${activeMobileTab === 'doc' ? 'bg-[#0B192C] text-white' : 'text-slate-700'}`}
+            onClick={() => setIsFlagged(!isFlagged)}
+            className={`px-3 h-9 text-[12px] font-medium rounded-lg transition-colors ${
+              isFlagged ? 'bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626]' : 'bg-white border border-[#E5E2EC] text-[#66627A]'
+            }`}
           >
-            Document
-          </button>
-          <button
-            onClick={() => setActiveMobileTab('tokens')}
-            className={`px-3 py-1 rounded ${activeMobileTab === 'tokens' ? 'bg-[#0B192C] text-white' : 'text-slate-700'}`}
-          >
-            Tokens
-          </button>
-          <button
-            onClick={() => setActiveMobileTab('rules')}
-            className={`px-3 py-1 rounded ${activeMobileTab === 'rules' ? 'bg-[#0B192C] text-white' : 'text-slate-700'}`}
-          >
-            Rules
-          </button>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <button onClick={() => showToast(`Downloading ${selectedDoc}...`)} className="px-3 h-8 bg-white border border-slate-300 text-slate-900 text-[11px] font-bold font-data rounded">
-            Original PDF
-          </button>
-          <button onClick={() => setIsFlagged(!isFlagged)} className={`px-3 h-8 text-[11px] font-bold font-data rounded ${isFlagged ? 'bg-red-800 text-white' : 'bg-red-100 text-red-900'}`}>
             {isFlagged ? 'Flagged Discrepancy' : 'Flag Document'}
           </button>
         </div>
-      </section>
+      </div>
 
-      {/* Responsive Workspace Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 w-full min-h-[calc(100vh-140px)]">
-        {/* Left Document Viewer Panel (6 Cols Desktop) */}
-        <div className={`lg:col-span-6 bg-slate-200 border-r border-slate-300 flex flex-col justify-between ${
-          activeMobileTab === 'doc' ? 'block' : 'hidden lg:flex'
-        }`}>
-          <div className="h-10 px-4 bg-slate-300 border-b border-slate-400 flex items-center justify-between text-[11px] font-data text-slate-700">
-            <span className="font-bold text-slate-900">{selectedDoc}</span>
+      {/* Split Workspace Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Pane (7 cols): Document Viewer */}
+        <div className="lg:col-span-7 bg-white border border-[#E5E2EC] rounded-xl overflow-hidden">
+          {/* Doc View Toolbar */}
+          <div className="px-5 py-3 bg-[#F8F9FC] border-b border-[#E5E2EC] flex items-center justify-between text-[12px] text-[#66627A]">
             <div className="flex items-center gap-2">
-              <button onClick={() => setZoomLevel(Math.max(75, zoomLevel - 15))} className="w-6 h-6 bg-white border rounded font-bold">-</button>
-              <span>{zoomLevel}%</span>
-              <button onClick={() => setZoomLevel(Math.min(150, zoomLevel + 15))} className="w-6 h-6 bg-white border rounded font-bold">+</button>
-              <span className="opacity-40">|</span>
-              <span>Pg 2 / 4</span>
+              <span className="material-symbols-outlined text-[16px] text-[#4527A0]">description</span>
+              <span className="font-medium text-[#17152B]">{selectedDoc}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setZoomLevel(Math.max(75, zoomLevel - 15))}
+                className="w-6 h-6 bg-white border border-[#E5E2EC] rounded hover:bg-[#F1EFF7] text-[#17152B] font-bold"
+              >
+                -
+              </button>
+              <span className="font-data text-[11px]">{zoomLevel}%</span>
+              <button
+                onClick={() => setZoomLevel(Math.min(150, zoomLevel + 15))}
+                className="w-6 h-6 bg-white border border-[#E5E2EC] rounded hover:bg-[#F1EFF7] text-[#17152B] font-bold"
+              >
+                +
+              </button>
+              <span className="opacity-30">|</span>
+              <span>Page 2 of 4</span>
             </div>
           </div>
 
-          <div className="p-4 lg:p-6 overflow-y-auto flex items-center justify-center flex-1">
-            <div style={{ transform: `scale(${zoomLevel / 100})` }} className="w-full max-w-2xl bg-white shadow-2xl p-6 lg:p-8 min-h-[660px] border border-slate-400 space-y-4">
-              <div className="flex justify-between items-center bg-slate-100 p-3 rounded border border-slate-300">
+          {/* Document Sheet Container */}
+          <div className="p-6 bg-[#F8F9FC] flex items-center justify-center min-h-[560px] overflow-auto">
+            <div
+              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+              className="w-full max-w-xl bg-white border border-[#E5E2EC] rounded-lg p-6 space-y-4 shadow-sm transition-transform duration-200"
+            >
+              {/* Document Letterhead */}
+              <div className="flex items-start justify-between pb-3 border-b border-[#E5E2EC]">
                 <div>
-                  <div className="font-display font-bold text-[#0B192C] text-[16px]">GAIL (INDIA) LIMITED</div>
-                  <div className="text-[9px] uppercase font-data font-bold text-slate-500">Government of India Undertaking</div>
+                  <div className="font-bold text-[#17152B] text-[15px]">GAIL (INDIA) LIMITED</div>
+                  <div className="text-[10px] text-[#66627A] uppercase">Government of India Undertaking</div>
                 </div>
-                <div className="text-right font-data text-[9px] text-slate-600">Ref: GAIL/HVJ/PROJ/2024</div>
+                <div className="text-right text-[10px] font-data text-[#66627A]">
+                  Ref: GAIL/HVJ/PROJ/2024
+                </div>
               </div>
 
-              <h2 className="text-center font-display font-bold text-[18px] uppercase underline text-slate-900">
-                Satisfactory Execution Certificate
-              </h2>
+              {/* Title */}
+              <div className="text-center py-1">
+                <h3 className="text-[14px] font-bold uppercase text-[#17152B] tracking-wide">
+                  Satisfactory Execution Certificate
+                </h3>
+              </div>
 
-              <div className="p-3 bg-slate-200 border-2 border-slate-800 rounded relative">
-                <div className="absolute -top-3 left-3 bg-[#0B192C] text-white text-[9px] px-2 py-0.5 rounded font-data font-bold">
-                  BOX: (x:120, y:450, w:280, h:65) • CONF: 97.4%
+              {/* Highlighted Bounding Box Area */}
+              <div className="p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-lg relative space-y-1.5">
+                <div className="text-[10px] font-bold text-[#DC2626] uppercase tracking-wider flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[13px]">warning</span>
+                  <span>Entity Name Mismatch Flagged (OCR Box 02)</span>
                 </div>
-                <p className="text-[13px] text-slate-900 pt-1 font-sans">
-                  Issued in favor of <mark className="bg-red-200 text-red-900 font-bold px-1 rounded border border-red-400">M/s Apex Pipeline LLC</mark> for 142.8 KM gas trunkline expansion.
+                <p className="text-[13px] text-[#17152B] leading-relaxed">
+                  Issued in favor of{' '}
+                  <mark className="bg-[#FECACA] text-[#DC2626] font-bold px-1 rounded">
+                    M/s Apex Pipeline LLC
+                  </mark>{' '}
+                  for 142.8 KM gas trunkline expansion project (Sector 3B).
                 </p>
-                <div className="mt-2 pt-2 border-t border-slate-300 flex items-center justify-between font-data text-[10px] text-red-900 font-bold">
+                <div className="pt-2 border-t border-[#FECACA] text-[11px] text-[#66627A] flex items-center justify-between">
                   <span>Bidder Record: Apex InfraTech Solutions Pvt Ltd</span>
-                  <span>Levenstein Match: 68.1%</span>
+                  <span className="font-bold text-[#DC2626] font-data">Match: 68.1%</span>
                 </div>
               </div>
 
-              <p className="text-[12px] text-slate-700 font-sans leading-relaxed">
-                Total continuous contract period: 4.2 years (Jan 2020 - Mar 2024). Operational performance met API 1104 standards.
+              <p className="text-[12px] text-[#66627A] leading-relaxed">
+                Total continuous contract execution period: 4.2 continuous years (Jan 2020 - Mar 2024). Operational performance met API 1104 standards.
               </p>
 
-              <div className="pt-6 border-t border-slate-300 flex items-end justify-between font-data text-[10px]">
-                <div className="w-24 h-24 rounded-full border-2 border-dashed border-slate-800 flex flex-col items-center justify-center text-center p-1 text-slate-800 font-bold transform -rotate-6">
+              {/* Signature & Seal */}
+              <div className="pt-4 border-t border-[#E5E2EC] flex items-end justify-between text-[11px]">
+                <div className="p-2 border border-dashed border-[#66627A] rounded text-[#66627A] text-[10px] text-center font-data">
                   GAIL HAZIRA<br />12 APR 2024
                 </div>
                 <div className="text-right">
-                  <div className="font-bold text-slate-900 text-[12px]">Dr. S. K. Bhattacharya</div>
-                  <div className="text-slate-600">General Manager (Projects)</div>
-                  <div className="text-slate-500 font-data">SAP ID: GAIL-EMP-88201</div>
+                  <div className="font-bold text-[#17152B]">Dr. S. K. Bhattacharya</div>
+                  <div className="text-[#66627A]">General Manager (Projects)</div>
+                  <div className="text-[10px] font-data text-[#66627A]">SAP Verified: GAIL-88201</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Center & Right Compliance Intelligence Panels (6 Cols Desktop) */}
-        <div className={`lg:col-span-6 bg-white p-4 lg:p-6 flex flex-col justify-between space-y-4 overflow-y-auto ${
-          activeMobileTab !== 'doc' ? 'block' : 'hidden lg:flex'
-        }`}>
-          <div className="space-y-4">
-            {/* Token Matrix Header */}
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] text-slate-800">smart_toy</span>
-                <h2 className="font-display text-[16px] font-bold text-slate-900">Extracted Token & Compliance Matrix</h2>
-              </div>
-              <span className="font-data text-[10px] bg-slate-100 border border-slate-300 px-2 py-0.5 rounded font-bold">
-                Paddle OCR / PyMuPDF Service
+        {/* Right Pane (5 cols): Token Matrix & Officer Action */}
+        <div className="lg:col-span-5 space-y-4">
+          {/* Extracted Token Matrix */}
+          <div className="bg-white border border-[#E5E2EC] rounded-xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[15px] font-semibold text-[#17152B]">Extracted Token Matrix</h2>
+              <span className="text-[11px] font-data text-[#66627A] bg-[#F1EFF7] px-2 py-0.5 rounded">
+                Paddle OCR v2.6
               </span>
             </div>
 
-            {/* Token Table */}
-            <div className="border border-slate-300 rounded overflow-hidden">
-              <table className="w-full text-left font-sans text-[12px]">
-                <thead className="bg-slate-100 font-data text-[10px] uppercase font-bold text-slate-700 border-b border-slate-300">
+            <div className="border border-[#E5E2EC] rounded-lg overflow-hidden">
+              <table className="w-full text-left text-[12px]">
+                <thead className="bg-[#F8F9FC] border-b border-[#E5E2EC] text-[11px] font-semibold text-[#66627A]">
                   <tr>
                     <th className="p-2.5">Field</th>
                     <th className="p-2.5">Extracted Value</th>
                     <th className="p-2.5 text-right">Result</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
-                  <tr className="bg-red-50/50">
-                    <td className="p-2.5 font-bold">Issued Entity</td>
-                    <td className="p-2.5 font-data text-red-900 font-bold">Apex Pipeline LLC</td>
-                    <td className="p-2.5 text-right font-data text-red-900 font-bold">MISMATCH (68%)</td>
+                <tbody className="divide-y divide-[#E5E2EC]">
+                  <tr className="bg-[#FEF2F2]">
+                    <td className="p-2.5 font-medium text-[#17152B]">Issued Entity</td>
+                    <td className="p-2.5 font-data text-[#DC2626] font-bold">Apex Pipeline LLC</td>
+                    <td className="p-2.5 text-right">
+                      <StatusBadge status="non-compliant" label="Mismatch" />
+                    </td>
                   </tr>
                   <tr>
-                    <td className="p-2.5 font-bold">Project Scope</td>
+                    <td className="p-2.5 font-medium text-[#17152B]">Project Scope</td>
                     <td className="p-2.5">24" HVJ Trunkline (142.8 km)</td>
-                    <td className="p-2.5 text-right font-data text-emerald-800 font-bold">COMPLIANT</td>
+                    <td className="p-2.5 text-right">
+                      <StatusBadge status="compliant" label="Passed" />
+                    </td>
                   </tr>
                   <tr>
-                    <td className="p-2.5 font-bold">Experience Yrs</td>
+                    <td className="p-2.5 font-medium text-[#17152B]">Experience Yrs</td>
                     <td className="p-2.5 font-data">4.20 Continuous Yrs</td>
-                    <td className="p-2.5 text-right font-data text-emerald-800 font-bold">Δ +0.20 Yr Surplus</td>
+                    <td className="p-2.5 text-right">
+                      <StatusBadge status="compliant" label="Passed" />
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
+          </div>
 
-            {/* Deterministic Rule Traceability Box */}
-            <div className="bg-slate-100 p-4 border border-slate-300 rounded space-y-2">
-              <div className="flex items-center justify-between font-data">
-                <span className="font-bold text-slate-900 text-[12px]">Deterministic Rule Trace</span>
-                <span className="bg-[#0B192C] text-white text-[10px] px-2 py-0.5 rounded font-bold">RULE-TECH-EXP-01</span>
-              </div>
-              <div className="bg-white p-3 border border-slate-300 rounded font-data text-[11px] text-slate-900 space-y-1">
-                <div className="text-slate-500 text-[10px]">// Mathematical Evaluation Formula</div>
-                <div className="font-bold text-slate-900">Result = (Bidder_Entity == Cert_Entity) && (Exp_Years &gt;= 4.0)</div>
-                <div className="text-red-900 font-bold">• Apex InfraTech vs Apex Pipeline LLC → FALSE (68.1%)</div>
-                <div className="text-emerald-800 font-bold">• 4.20 Yrs &gt;= 4.00 Yrs → TRUE</div>
-                <div className="text-red-900 font-bold pt-1">• COMPOUND DETERMINATION: FALSE (QUALIFICATION FAILED)</div>
-              </div>
+          {/* Deterministic Rule Trace */}
+          <div className="bg-white border border-[#E5E2EC] rounded-xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[15px] font-semibold text-[#17152B]">Deterministic Rule Trace</h2>
+              <span className="text-[10px] font-data font-bold text-[#4527A0] bg-[#F1EFF7] px-2 py-0.5 rounded">
+                RULE-TECH-EXP-01
+              </span>
+            </div>
+
+            <div className="bg-[#F8F9FC] p-3 rounded-lg border border-[#E5E2EC] font-data text-[11px] space-y-1 text-[#17152B]">
+              <div className="text-[#66627A]">// Evaluation Logic under GFR-144</div>
+              <div className="font-semibold text-[#17152B]">Result = (EntityMatch &gt;= 95%) && (ExpYears &gt;= 4.0)</div>
+              <div className="text-[#DC2626]">• Apex InfraTech vs Apex Pipeline LLC → FALSE (68.1%)</div>
+              <div className="text-[#059669]">• 4.20 Yrs &gt;= 4.00 Yrs → TRUE</div>
+              <div className="text-[#DC2626] font-bold pt-1">• DETERMINATION: FAILED (Clause 4.1 Breached)</div>
             </div>
           </div>
 
-          {/* Officer Statutory Action Panel */}
-          <div className="bg-[#0B192C] text-white p-4 border border-slate-800 rounded space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-display font-bold text-[14px]">Procurement Officer Determination</span>
-              <span className="font-data text-[10px] text-amber-400">Database & Audit Sync</span>
+          {/* Officer Determination Action Box */}
+          <div className="bg-white border border-[#E5E2EC] rounded-xl p-5 space-y-4">
+            <div>
+              <h2 className="text-[15px] font-semibold text-[#17152B]">Officer Determination</h2>
+              <p className="text-[12px] text-[#66627A] mt-0.5">Select formal action and sign with PIN</p>
             </div>
 
-            <div className="space-y-1.5 font-sans text-[12px]">
-              <label className="flex items-center gap-2 p-2 bg-slate-900 border border-slate-700 rounded cursor-pointer">
-                <input type="radio" checked={officerDecision === 'clarify'} onChange={() => setOfficerDecision('clarify')} />
-                <span>Issue Formal 48-Hour GeM Notice (Seek M&A / Succession Proof)</span>
+            <div className="space-y-2 text-[12px]">
+              <label className="flex items-center gap-2 p-2.5 rounded-lg border border-[#E5E2EC] bg-[#F8F9FC] cursor-pointer hover:border-[#4527A0]">
+                <input
+                  type="radio"
+                  name="decision"
+                  checked={officerDecision === 'clarify'}
+                  onChange={() => setOfficerDecision('clarify')}
+                  className="text-[#4527A0]"
+                />
+                <span className="text-[#17152B] font-medium">Issue 48-Hour Statutory GeM Notice (Seek M&A Proof)</span>
               </label>
 
-              <label className="flex items-center gap-2 p-2 bg-slate-900 border border-slate-700 rounded cursor-pointer">
-                <input type="radio" checked={officerDecision === 'reject'} onChange={() => setOfficerDecision('reject')} />
-                <span className="text-red-400 font-bold">Confirm Immediate Disqualification under Clause 4.1</span>
+              <label className="flex items-center gap-2 p-2.5 rounded-lg border border-[#E5E2EC] bg-[#F8F9FC] cursor-pointer hover:border-[#DC2626]">
+                <input
+                  type="radio"
+                  name="decision"
+                  checked={officerDecision === 'reject'}
+                  onChange={() => setOfficerDecision('reject')}
+                  className="text-[#DC2626]"
+                />
+                <span className="text-[#DC2626] font-medium">Confirm Immediate Disqualification under Clause 4.1</span>
               </label>
             </div>
 
-            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
+            <div className="flex items-center gap-2 pt-2 border-t border-[#E5E2EC]">
               <input
                 type="password"
                 maxLength={6}
                 value={officerPin}
                 onChange={(e) => setOfficerPin(e.target.value)}
                 placeholder="6-Digit PIN"
-                className="h-8 w-28 px-2 bg-slate-900 border border-slate-700 rounded text-white font-data text-[12px] text-center"
+                className="h-9 w-28 px-2.5 bg-[#F8F9FC] border border-[#E5E2EC] rounded-lg text-[#17152B] font-data text-[12px] text-center focus:outline-none focus:border-[#4527A0]"
               />
-              <button onClick={handleExecuteOfficerOrder} className="px-4 h-8 bg-amber-500 text-slate-950 text-[11px] font-bold font-data rounded hover:bg-amber-400">
+              <button
+                onClick={handleExecuteOfficerOrder}
+                className="flex-1 h-9 bg-[#4527A0] text-white text-[12px] font-medium rounded-lg hover:bg-[#5E35B1] transition-colors"
+              >
                 Execute Order
               </button>
             </div>

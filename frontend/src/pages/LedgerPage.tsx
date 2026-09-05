@@ -10,6 +10,16 @@ interface OutletContextType {
   showToast: (msg: string) => void;
 }
 
+interface AuditLogRecord {
+  id: string;
+  timestamp: string;
+  action: string;
+  actor: string;
+  entity: string;
+  metadata?: Record<string, unknown>;
+  sha256_root: string;
+}
+
 export const LedgerPage: React.FC = () => {
   const { showToast } = useOutletContext<OutletContextType>();
   const [assets] = useState(INITIAL_ASSETS);
@@ -19,20 +29,20 @@ export const LedgerPage: React.FC = () => {
   const [showVigilanceModal, setShowVigilanceModal] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchAuditLogs().then((logs) => {
+    fetchAuditLogs().then((logs: AuditLogRecord[] | null) => {
       if (logs && Array.isArray(logs) && logs.length > 0) {
-        const formatted: AuditEvent[] = logs.map((log: any) => ({
+        const formatted: AuditEvent[] = logs.map((log: AuditLogRecord) => ({
           timestamp: new Date(log.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
           timeDetail: new Date(log.timestamp).toLocaleTimeString('en-GB'),
           blockRef: `#BLK-${log.id.slice(0, 6)}`,
-          category: log.action || 'AUDIT_LOGGED',
+          category: (log.action as AuditEvent['category']) || 'REGISTRY_VERIFICATION',
           actorName: log.actor || 'System Engine',
-          actorTitle: 'Sovereign Compliance Node',
+          actorTitle: 'Compliance Verification Node',
           actorFingerprint: `SHA256: ${log.sha256_root.slice(0, 16)}`,
           actionTitle: `${log.action} on ${log.entity}`,
           actionDetails: JSON.stringify(log.metadata || {}),
-          sha256Root: log.sha256_root.slice(0, 12) + '...',
-          statusBadge: 'Verified Database Record',
+          sha256Root: log.sha256_root.slice(0, 16) + '...',
+          statusBadge: 'Verified Record',
           statusType: log.action.includes('REJECT') || log.action.includes('DISCREPANCY') ? 'error' : 'success'
         }));
         setAuditEvents(formatted);
@@ -48,148 +58,153 @@ export const LedgerPage: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-slate-100 p-4 lg:p-8 space-y-6">
-      {/* Top Bar */}
-      <div className="bg-white border border-slate-300 rounded-lg p-5 lg:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-          <div>
-            <div className="text-[11px] font-data font-bold uppercase text-slate-600 tracking-wider">
-              SECTION 65B IT ACT 2000 CERTIFIABLE NON-REPUDIATION AUDIT TRAIL
-            </div>
-            <h1 className="text-[22px] lg:text-[26px] font-display text-slate-900 font-bold mt-1 tracking-tight">
-              Cryptographic Evidence Integrity Command Center
-            </h1>
-            <div className="text-[12px] text-slate-600 font-sans mt-0.5">
-              Distributed Ledger Provenance for NIT MoPNG/GAIL/2026/TND-001 (PostgreSQL & Fabric Synced)
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 self-start xl:self-auto flex-wrap">
-            <button
-              onClick={() => setShowBlockModal(true)}
-              className="px-4 h-9 bg-slate-100 border border-slate-300 text-slate-900 font-data text-[11px] font-bold rounded hover:bg-slate-200"
-            >
-              Verify Raw Block Header
-            </button>
-            <button
-              onClick={() => setShowVigilanceModal(true)}
-              className="px-4 h-9 bg-white border border-slate-300 text-slate-900 font-data text-[11px] font-bold rounded hover:bg-slate-50"
-            >
-              Print Vigilance Cert
-            </button>
-            <button
-              onClick={() => showToast('Exporting Notarized Package (SHA256 Manifest + DSC Cert)...')}
-              className="px-4 h-9 bg-[#0B192C] text-white font-data text-[11px] font-bold rounded hover:bg-[#1E3A5F]"
-            >
-              Export Package (ZIP + DSC)
-            </button>
-          </div>
+    <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#17152B] tracking-tight">
+            Verification Ledger
+          </h1>
+          <p className="text-[14px] text-[#66627A] mt-1">
+            Every verification action is traceable under Section 65B of the Indian Evidence Act.
+          </p>
         </div>
 
-        {/* Traceability Pipeline Flow Banner */}
-        <div className="p-4 bg-[#0B192C] text-white rounded-lg border border-slate-800 space-y-2">
-          <div className="text-[11px] font-data font-bold text-amber-400 uppercase tracking-widest">
-            END-TO-END CRYPTOGRAPHIC TRACEABILITY PIPELINE
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowBlockModal(true)}
+            className="px-3.5 py-2 bg-white border border-[#E5E2EC] text-[#17152B] font-medium text-[13px] rounded-lg hover:bg-[#F8F9FC] transition-colors"
+          >
+            Verify Block Header
+          </button>
+          <button
+            onClick={() => setShowVigilanceModal(true)}
+            className="px-3.5 py-2 bg-white border border-[#E5E2EC] text-[#17152B] font-medium text-[13px] rounded-lg hover:bg-[#F8F9FC] transition-colors"
+          >
+            Vigilance Certificate
+          </button>
+          <button
+            onClick={() => showToast('Exporting Notarized Package (ZIP + DSC)...')}
+            className="px-4 py-2 bg-[#4527A0] text-white font-medium text-[13px] rounded-lg hover:bg-[#5E35B1] transition-colors"
+          >
+            Export Archive
+          </button>
+        </div>
+      </div>
+
+      {/* 5-Step Traceability Bar */}
+      <div className="bg-white border border-[#E5E2EC] rounded-xl p-5 space-y-3">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-[#66627A]">
+          End-to-End Traceability Pipeline
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-[12px]">
+          <div className="p-2.5 rounded-lg bg-[#F8F9FC] border border-[#E5E2EC] text-center">
+            <div className="text-[10px] text-[#66627A] font-semibold">1. Requirement</div>
+            <div className="font-medium text-[#17152B] mt-0.5">GFR-144 Clause</div>
           </div>
-          <div className="flex items-center justify-between flex-wrap gap-2 text-[11px] font-data pt-1 border-t border-slate-800">
-            <span className="px-2 py-1 bg-slate-900 rounded border border-slate-700">1. Requirement</span>
-            <span className="text-slate-500">→</span>
-            <span className="px-2 py-1 bg-slate-900 rounded border border-slate-700">2. Submitted Evidence</span>
-            <span className="text-slate-500">→</span>
-            <span className="px-2 py-1 bg-slate-900 rounded border border-slate-700">3. Registry Verification</span>
-            <span className="text-slate-500">→</span>
-            <span className="px-2 py-1 bg-slate-900 rounded border border-slate-700">4. Rule Decision</span>
-            <span className="text-slate-500">→</span>
-            <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded border border-amber-500/40 font-bold">
-              5. Sealed Database Record (SHA-256)
-            </span>
+          <div className="p-2.5 rounded-lg bg-[#F8F9FC] border border-[#E5E2EC] text-center">
+            <div className="text-[10px] text-[#66627A] font-semibold">2. Evidence</div>
+            <div className="font-medium text-[#17152B] mt-0.5">Submitted PDF</div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-[#F8F9FC] border border-[#E5E2EC] text-center">
+            <div className="text-[10px] text-[#66627A] font-semibold">3. Registry</div>
+            <div className="font-medium text-[#17152B] mt-0.5">GSTN / ROC Sync</div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-[#F8F9FC] border border-[#E5E2EC] text-center">
+            <div className="text-[10px] text-[#66627A] font-semibold">4. Rule Decision</div>
+            <div className="font-medium text-[#17152B] mt-0.5">OCR Evaluation</div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-[#ECFDF5] border border-[#A7F3D0] text-center">
+            <div className="text-[10px] text-[#059669] font-semibold">5. Ledger Hash</div>
+            <div className="font-medium text-[#059669] mt-0.5 font-data">SHA-256 Sealed</div>
           </div>
         </div>
       </div>
 
-      {/* Main Operations Grid */}
-      <div className="space-y-6">
-        {/* Off-Chain Asset Verification Table */}
-        <div className="bg-white rounded-lg border border-slate-300 overflow-hidden shadow-xs">
-          <div className="p-4 bg-slate-100 border-b border-slate-300 font-display font-bold text-[#0B192C] text-[15px]">
-            Off-Chain Document Tamper Testbed & SHA-256 Hashing Subsystem
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse font-sans text-[12px]">
-              <thead>
-                <tr className="bg-[#0B192C] text-white font-data text-[11px] uppercase tracking-wider font-semibold border-b border-slate-800">
-                  <th className="p-3">Evidence Asset Name</th>
-                  <th className="p-3">Immutable Block Hash</th>
-                  <th className="p-3">Recomputed Off-Chain Hash</th>
-                  <th className="p-3">Quorum Consensus</th>
-                  <th className="p-3 text-right">Audit Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white">
-                {assets.map(a => (
-                  <tr key={a.id} className={a.status === 'tampered' ? 'bg-red-50/50' : 'hover:bg-slate-50'}>
-                    <td className="p-3 font-bold text-slate-900">{a.name}</td>
-                    <td className="p-3 font-data text-[11px] text-slate-800">{a.immutableHash.slice(0, 28)}...</td>
-                    <td className="p-3 font-data text-[11px] text-slate-800">{a.recomputedHash.slice(0, 28)}...</td>
-                    <td className="p-3 font-data font-bold text-slate-900">{a.consensusCount}/4 Nodes Match</td>
-                    <td className="p-3 text-right">
-                      <StatusBadge
-                        status={a.status === 'tampered' ? 'error' : 'verified'}
-                        label={a.status === 'tampered' ? 'TAMPERING INTERCEPTED' : 'INTEGRITY VERIFIED'}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* Off-Chain Asset Integrity Table */}
+      <div className="bg-white border border-[#E5E2EC] rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#E5E2EC]">
+          <h2 className="text-[16px] font-semibold text-[#17152B]">Off-Chain Document Tamper Testbed</h2>
+          <p className="text-[12px] text-[#66627A] mt-0.5">Cryptographic verification comparing immutable hashes against live storage</p>
         </div>
 
-        {/* Audit Event Stream Table */}
-        <div className="bg-white rounded-lg border border-slate-300 overflow-hidden shadow-xs">
-          <div className="p-4 bg-slate-100 border-b border-slate-300 flex justify-between items-center">
-            <span className="font-display font-bold text-[#0B192C] text-[15px]">
-              Chronological Audit Event Stream & Block Transcripts
-            </span>
-            <select
-              value={selectedFilter}
-              onChange={(e) => setSelectedFilter(e.target.value)}
-              className="text-[11px] font-data border border-slate-300 rounded px-2.5 py-1 bg-white font-bold"
-            >
-              <option value="all">All Audit Events</option>
-              <option value="ruleset">Ruleset Committed</option>
-              <option value="bidder">Bidder Submissions</option>
-            </select>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse font-sans text-[12px]">
-              <thead>
-                <tr className="bg-[#0B192C] text-white font-data text-[11px] uppercase tracking-wider font-semibold border-b border-slate-800">
-                  <th className="p-3">Timestamp (IST)</th>
-                  <th className="p-3">Block Ref</th>
-                  <th className="p-3">Event Category</th>
-                  <th className="p-3">Actor & Fingerprint</th>
-                  <th className="p-3">Action Details</th>
-                  <th className="p-3 text-right">SHA-256 Root</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-[#F8F9FC] border-b border-[#E5E2EC] text-[11px] font-semibold text-[#66627A] uppercase tracking-wider">
+                <th className="py-3 px-4">Evidence Asset Name</th>
+                <th className="py-3 px-4">Immutable Block Hash</th>
+                <th className="py-3 px-4">Recomputed Hash</th>
+                <th className="py-3 px-4">Consensus</th>
+                <th className="py-3 px-4 text-right">Audit Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E5E2EC]">
+              {assets.map((a) => (
+                <tr key={a.id} className={a.status === 'tampered' ? 'bg-[#FEF2F2]' : 'hover:bg-[#F8F9FC] transition-colors'}>
+                  <td className="py-3 px-4 font-medium text-[#17152B]">{a.name}</td>
+                  <td className="py-3 px-4 font-data text-[12px] text-[#66627A]">{a.immutableHash.slice(0, 24)}...</td>
+                  <td className="py-3 px-4 font-data text-[12px] text-[#66627A]">{a.recomputedHash.slice(0, 24)}...</td>
+                  <td className="py-3 px-4 text-[12px] text-[#17152B]">{a.consensusCount}/4 Nodes Match</td>
+                  <td className="py-3 px-4 text-right">
+                    <StatusBadge
+                      status={a.status === 'tampered' ? 'error' : 'compliant'}
+                      label={a.status === 'tampered' ? 'Tamper Alert' : 'Verified'}
+                    />
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white font-sans">
-                {filteredEvents.map((evt, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="p-3 font-data text-[11px] text-slate-800">{evt.timestamp}</td>
-                    <td className="p-3 font-data font-bold text-slate-900">{evt.blockRef}</td>
-                    <td className="p-3 font-bold uppercase text-[11px] text-slate-800">{evt.category}</td>
-                    <td className="p-3">
-                      <div className="font-bold text-slate-900">{evt.actorName}</div>
-                      <div className="font-data text-[10px] text-slate-500">{evt.actorFingerprint}</div>
-                    </td>
-                    <td className="p-3 text-slate-800">{evt.actionTitle}</td>
-                    <td className="p-3 text-right font-data text-[11px] text-slate-900 font-bold">{evt.sha256Root}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Chronological Audit Event Stream */}
+      <div className="bg-white border border-[#E5E2EC] rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#E5E2EC] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[16px] font-semibold text-[#17152B]">Chronological Audit Event Stream</h2>
+            <p className="text-[12px] text-[#66627A] mt-0.5">Immutable transcript of all verification transactions</p>
           </div>
+          <select
+            value={selectedFilter}
+            onChange={(e) => setSelectedFilter(e.target.value)}
+            className="text-[12px] font-medium border border-[#E5E2EC] rounded-lg px-2.5 py-1.5 bg-white text-[#17152B] focus:outline-none focus:border-[#4527A0]"
+          >
+            <option value="all">All Events</option>
+            <option value="ruleset">Ruleset Events</option>
+            <option value="bidder">Bidder Submissions</option>
+          </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-[#F8F9FC] border-b border-[#E5E2EC] text-[11px] font-semibold text-[#66627A] uppercase tracking-wider">
+                <th className="py-3 px-4">Timestamp</th>
+                <th className="py-3 px-4">Block Ref</th>
+                <th className="py-3 px-4">Event</th>
+                <th className="py-3 px-4">Actor</th>
+                <th className="py-3 px-4">Details</th>
+                <th className="py-3 px-4 text-right">SHA-256 Digest</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E5E2EC]">
+              {filteredEvents.map((evt, idx) => (
+                <tr key={idx} className="hover:bg-[#F8F9FC] transition-colors">
+                  <td className="py-3 px-4 text-[12px] text-[#66627A]">{evt.timestamp}</td>
+                  <td className="py-3 px-4 font-data text-[12px] font-medium text-[#4527A0]">{evt.blockRef}</td>
+                  <td className="py-3 px-4 font-medium text-[#17152B]">{evt.category}</td>
+                  <td className="py-3 px-4">
+                    <div className="font-medium text-[#17152B]">{evt.actorName}</div>
+                    <div className="text-[10px] text-[#66627A] font-data">{evt.actorFingerprint.slice(0, 16)}...</div>
+                  </td>
+                  <td className="py-3 px-4 text-[12px] text-[#66627A] max-w-xs truncate">{evt.actionTitle}</td>
+                  <td className="py-3 px-4 text-right font-data text-[12px] text-[#17152B]">{evt.sha256Root}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -197,18 +212,18 @@ export const LedgerPage: React.FC = () => {
       <Modal
         isOpen={showBlockModal}
         onClose={() => setShowBlockModal(false)}
-        title="Ledger Block Envelope"
-        icon="view_in_ar"
-        authorityBadge="POSTGRESQL & FABRIC SYNC"
+        title="Raw Block Header Envelope"
+        icon="hub"
+        authorityBadge="HYPERLEDGER FABRIC & SUPABASE"
       >
-        <pre className="font-data text-[11px] bg-slate-900 text-slate-200 p-3.5 rounded border border-slate-700 overflow-x-auto">
+        <pre className="font-data text-[12px] bg-[#F8F9FC] text-[#17152B] p-4 rounded-lg border border-[#E5E2EC] overflow-x-auto">
 {`{
   "channel_id": "mopng-procure-ledger",
-  "database": "Supabase PostgreSQL",
+  "block_height": 419284,
   "previous_hash": "7d21bb0934ef00192a8bca0194857dfa4e01928374a",
   "data_hash": "8c34f9a03d81b9e248910ae821fba01945829104fa2",
   "consensus": "Raft 2.5 (4/4 Sovereign Nodes Verified)",
-  "timestamp": ${Date.now()}
+  "timestamp": "2026-03-14T18:11:02.109Z"
 }`}
         </pre>
       </Modal>
@@ -218,15 +233,15 @@ export const LedgerPage: React.FC = () => {
         isOpen={showVigilanceModal}
         onClose={() => setShowVigilanceModal(false)}
         title="Section 65B Statutory Vigilance Certificate"
-        icon="gavel"
-        authorityBadge="CVC & INDIAN EVIDENCE ACT"
+        icon="verified"
+        authorityBadge="INDIAN EVIDENCE ACT SECTION 65B"
       >
-        <div className="space-y-2 text-[12px]">
-          <div className="font-bold text-slate-900">CERTIFICATE UNDER SECTION 65B OF INDIAN EVIDENCE ACT 1872</div>
-          <p className="text-slate-700">
-            I, Rajeshwar Rao, IAS, Procurement Director, MoPNG, hereby certify that the electronic record for Tender <strong>MoPNG/GAIL/2026/TND-001</strong> stored on PostgreSQL & Hyperledger Fabric is genuine, un-altered, and cryptographically verified.
+        <div className="space-y-3 text-[13px] text-[#17152B]">
+          <div className="font-semibold">CERTIFICATE UNDER SECTION 65B OF INDIAN EVIDENCE ACT 1872</div>
+          <p className="text-[#66627A] leading-relaxed">
+            I, Rajeshwar Rao, IAS, Procurement Director, MoPNG, hereby certify that the electronic record for Tender <strong>MoPNG/GAIL/2026/TND-001</strong> stored on PostgreSQL & Hyperledger Fabric is authentic, un-altered, and cryptographically verified.
           </p>
-          <div className="font-data text-[11px] text-[#0B192C] font-bold pt-1">
+          <div className="p-3 bg-[#F8F9FC] border border-[#E5E2EC] rounded-lg font-data text-[11px] text-[#4527A0]">
             SHA-256 Digest: 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
           </div>
         </div>
