@@ -31,8 +31,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath, onNavigate }) => 
       label: 'Audit Ledger & SHA-256',
       icon: 'lock_clock',
       badge: 'Fabric 2.5'
+    },
+    {
+      path: 'supabase-test' as any,
+      label: 'Supabase Diagnostic',
+      icon: 'dns',
+      badge: 'Cloud'
     }
   ];
+
 
   return (
     <aside className="fixed left-0 top-[88px] h-[calc(100vh-88px)] w-64 bg-[#ffffff] border-r border-[#c8c4d5] z-40 flex flex-col justify-between overflow-y-auto">

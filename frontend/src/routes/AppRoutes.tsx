@@ -5,6 +5,7 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { ChecklistPage } from '../pages/ChecklistPage';
 import { InspectorPage } from '../pages/InspectorPage';
 import { LedgerPage } from '../pages/LedgerPage';
+import { SupabaseTestPage } from '../pages/SupabaseTestPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -16,9 +17,11 @@ export const AppRoutes: React.FC = () => {
           <Route path="checklist" element={<ChecklistPage />} />
           <Route path="inspector" element={<InspectorPage />} />
           <Route path="ledger" element={<LedgerPage />} />
+          <Route path="supabase-test" element={<SupabaseTestPage />} />
           <Route path="*" element={<Navigate to="/checklist" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
   );
 };
+
