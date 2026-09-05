@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { UserRole } from '../types';
+import { useAuth } from '../hooks/useAuth';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -8,6 +9,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ currentRole, onRoleChange }) => {
+  const { user: authUser, profile, signOut } = useAuth();
   const [timeString, setTimeString] = useState<string>('14:32:08');
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -20,18 +22,8 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onRoleChange }) => 
     return () => clearInterval(interval);
   }, []);
 
-  const getRoleUser = () => {
-    switch (currentRole) {
-      case 'officer':
-        return { name: 'Rajeshwar Rao, IAS', title: 'Procurement Director (MoPNG)' };
-      case 'bidder':
-        return { name: 'S. K. Nambiar', title: 'Apex InfraTech (Authorized Signatory)' };
-      case 'auditor':
-        return { name: 'V. K. Shrivastava', title: 'CVC Statutory Auditor' };
-    }
-  };
-
-  const user = getRoleUser();
+  const displayName = profile?.full_name || authUser?.email?.split('@')[0] || 'Rajeshwar Rao, IAS';
+  const displayTitle = profile?.role ? `Role: ${profile.role}` : 'Procurement Director (MoPNG)';
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#ffffff]">
@@ -138,21 +130,32 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onRoleChange }) => 
             )}
           </div>
 
-          {/* User Profile */}
+          {/* User Profile & Sign Out */}
           <div className="flex items-center gap-3 pl-3 border-l border-[#c8c4d5]">
             <div className="text-right hidden sm:block">
-              <div className="text-[12px] font-bold text-[#0d1c2e] leading-tight">{user.name}</div>
+              <div className="text-[12px] font-bold text-[#0d1c2e] leading-tight">{displayName}</div>
               <div className="text-[11px] text-[#464553] flex items-center justify-end gap-1">
                 <span className="material-symbols-outlined text-[13px] text-[#4b41e1]">verified_user</span>
-                <span>DSC Class 3 Active</span>
+                <span>{displayTitle}</span>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-[#1f108e] text-white flex items-center justify-center font-bold text-xs shadow-sm">
-              <span className="material-symbols-outlined text-[18px]">person</span>
-            </div>
+            {authUser ? (
+              <button
+                onClick={() => signOut()}
+                title="Sign Out"
+                className="w-8 h-8 rounded-full bg-red-100 text-red-900 border border-red-300 flex items-center justify-center font-bold text-xs hover:bg-red-200 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">logout</span>
+              </button>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#1f108e] text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                <span className="material-symbols-outlined text-[18px]">person</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </header>
   );
 };
+

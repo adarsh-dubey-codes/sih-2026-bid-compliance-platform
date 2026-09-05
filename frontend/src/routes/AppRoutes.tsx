@@ -6,12 +6,29 @@ import { ChecklistPage } from '../pages/ChecklistPage';
 import { InspectorPage } from '../pages/InspectorPage';
 import { LedgerPage } from '../pages/LedgerPage';
 import { SupabaseTestPage } from '../pages/SupabaseTestPage';
+import { Login } from '../pages/auth/Login';
+import { Signup } from '../pages/auth/Signup';
+import { ForgotPassword } from '../pages/auth/ForgotPassword';
+import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 
 export const AppRoutes: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<MainLayout />}>
+        {/* Public Auth Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* Protected App Routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="/checklist" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="checklist" element={<ChecklistPage />} />
@@ -24,4 +41,3 @@ export const AppRoutes: React.FC = () => {
     </BrowserRouter>
   );
 };
-
