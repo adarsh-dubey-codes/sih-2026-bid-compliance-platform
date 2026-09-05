@@ -3,13 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import type { UserRole } from '../../context/AuthContext';
 
-
 export const Signup: React.FC = () => {
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('BIDDER');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,8 +18,23 @@ export const Signup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    setIsSubmitting(true);
 
+    if (!email.includes('@') || !email.includes('.')) {
+      setErrorMessage('Please enter a valid official email address');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters in length');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match. Please re-enter.');
+      return;
+    }
+
+    setIsSubmitting(true);
     const { error } = await signUp(email, password, fullName, role);
     setIsSubmitting(false);
 
@@ -95,20 +111,45 @@ export const Signup: React.FC = () => {
               <option value="PROCUREMENT_OFFICER">Procurement Officer (GAIL/MoPNG)</option>
               <option value="BIDDER">Bidder / Submitting Entity</option>
               <option value="AUDITOR">Auditor / Vigilance Official</option>
-              <option value="ADMIN">System Administrator</option>
             </select>
           </div>
 
           <div className="space-y-1">
             <label className="text-[11px] font-data font-bold uppercase text-slate-700">
-              Password
+              Password (Min 6 Characters)
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full h-10 pl-3 pr-10 text-[13px] font-data bg-slate-50 border border-slate-300 rounded focus:outline-none focus:border-slate-800"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2.5 top-2 text-slate-500 hover:text-slate-900"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-data font-bold uppercase text-slate-700">
+              Confirm Password
             </label>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               required
               minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full h-10 px-3 text-[13px] font-data bg-slate-50 border border-slate-300 rounded focus:outline-none focus:border-slate-800"
             />

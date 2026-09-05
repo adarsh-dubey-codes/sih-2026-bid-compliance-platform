@@ -7,19 +7,26 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberSession, setRememberSession] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    setIsSubmitting(true);
 
+    if (!email.includes('@') || !email.includes('.')) {
+      setErrorMessage('Please enter a valid official email address');
+      return;
+    }
+
+    setIsSubmitting(true);
     const { error } = await signIn(email, password);
     setIsSubmitting(false);
 
     if (error) {
-      setErrorMessage(error.message || 'Invalid credentials');
+      setErrorMessage(error.message || 'Invalid email or password');
     } else {
       navigate('/checklist');
     }
@@ -77,14 +84,38 @@ export const Login: React.FC = () => {
                 Forgot Password?
               </Link>
             </div>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full h-10 px-3 text-[13px] font-data bg-slate-50 border border-slate-300 rounded focus:outline-none focus:border-slate-800"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full h-10 pl-3 pr-10 text-[13px] font-data bg-slate-50 border border-slate-300 rounded focus:outline-none focus:border-slate-800"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2.5 top-2 text-slate-500 hover:text-slate-900"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Remember Session Checkbox */}
+          <div className="flex items-center justify-between font-sans text-[12px]">
+            <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-medium">
+              <input
+                type="checkbox"
+                checked={rememberSession}
+                onChange={(e) => setRememberSession(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-[#0B192C] focus:ring-[#0B192C]"
+              />
+              <span>Remember session on this device</span>
+            </label>
           </div>
 
           <button
