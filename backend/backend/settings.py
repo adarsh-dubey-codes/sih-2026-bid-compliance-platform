@@ -56,8 +56,23 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database Setup: Configured for PostgreSQL (Supabase) with SQLite fallback for local resilience
+DATABASE_URL = os.getenv('DATABASE_URL', '')
 DB_ENGINE = os.getenv('DB_ENGINE', '')
-if DB_ENGINE == 'django.db.backends.postgresql':
+
+if DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://'):
+    import urllib.parse
+    url = urllib.parse.urlparse(DATABASE_URL)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': url.path[1:] if url.path else 'postgres',
+            'USER': url.username or 'postgres',
+            'PASSWORD': url.password or '',
+            'HOST': url.hostname or 'localhost',
+            'PORT': str(url.port or 5432),
+        }
+    }
+elif DB_ENGINE == 'django.db.backends.postgresql' or os.getenv('DB_HOST', '').endswith('supabase.co'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -75,6 +90,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

@@ -199,11 +199,21 @@ def document_upload(request):
     with open(file_path, 'wb+') as destination:
         for chunk in file_obj.chunks():
             hasher.update(chunk)
-            destination.write(chunk)
-            
     sha256_hash = hasher.hexdigest()
 
+    # Upload to Supabase Storage if configured
+    supabase_storage_path = f"bids/{bid.bid_id}/{saved_filename}"
+    if settings.SUPABASE_URL and not settings.SUPABASE_URL.startswith('https://your-') and settings.SUPABASE_SERVICE_ROLE_KEY and not settings.SUPABASE_SERVICE_ROLE_KEY.startswith('your-'):
+        try:
+            from supabase import create_client
+            sp_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+            with open(file_path, 'rb') as f:
+                sp_client.storage.from_(settings.SUPABASE_STORAGE_BUCKET).upload(supabase_storage_path, f, {"content-type": file_obj.content_type or 'application/pdf'})
+        except Exception as sp_err:
+            print("Supabase Storage notice:", sp_err)
+
     doc = Document.objects.create(
+
         bid=bid,
         file_name=file_obj.name,
         file_type=file_obj.content_type or 'application/pdf',
