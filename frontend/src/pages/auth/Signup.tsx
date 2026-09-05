@@ -35,13 +35,18 @@ export const Signup: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    const { error } = await signUp(email, password, fullName, role);
+    const { data, error } = await signUp(email, password, fullName, role);
     setIsSubmitting(false);
 
     if (error) {
       setErrorMessage(error.message || 'Registration failed');
-    } else {
+    } else if (data?.session) {
       navigate('/checklist');
+    } else {
+      // Email confirmation is required by Supabase auth settings
+      setErrorMessage('');
+      alert('Registration successful! Your profile has been created in Supabase profiles table. If email confirmation is enabled in your Supabase project settings, please verify your email before logging in.');
+      navigate('/login');
     }
   };
 

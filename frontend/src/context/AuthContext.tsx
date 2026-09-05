@@ -20,7 +20,7 @@ interface AuthContextType {
   role: UserRole;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<{ data?: any; error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
 }
@@ -91,7 +91,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      const isEmailUnconfirmed = error.message?.toLowerCase().includes('email not confirmed');
+      if (isEmailUnconfirmed) {
+        return {
+          error: {
+            ...error,
+            message: 'Email confirmation pending in Supabase. Please check your inbox or disable "Confirm Email" in Supabase Auth Settings.',
+            isEmailUnconfirmed: true
+          }
+        };
+      }
+    }
+    if (data?.session) {
+      setSession(data.session);
+      setUser(data.user);
+      if (data.user) {
+        await fetchProfile(data.user.id, data.user.email);
+      }
+    }
     return { error };
   };
 
@@ -108,18 +127,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (!error && data.user) {
-      // Create profile row
-      await supabase.from('profiles').insert([
-        {
+      // Upsert profile row in profiles table
+      try {
+        await supabase.from('profiles').upsert([
+          {
+            id: data.user.id,
+            full_name: fullName,
+            email,
+            role: roleChoice,
+          },
+        ]);
+      } catch {
+        // Table trigger on_auth_user_created also inserts this profile automatically
+      }
+
+      // If user session is returned (email confirmation disabled in Supabase), update local state
+      if (data.session) {
+        setSession(data.session);
+        setUser(data.user);
+        setProfile({
           id: data.user.id,
           full_name: fullName,
           email,
           role: roleChoice,
-        },
-      ]);
+        });
+        setRole(roleChoice);
+      }
     }
 
-    return { error };
+    return { data, error };
   };
 
   const signOut = async () => {

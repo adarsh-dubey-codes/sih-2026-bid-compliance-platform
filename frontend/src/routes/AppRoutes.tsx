@@ -32,8 +32,12 @@ export const AppRoutes: React.FC = () => {
           <Route index element={<Navigate to="/checklist" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="checklist" element={<ChecklistPage />} />
+          <Route path="compliance" element={<ChecklistPage />} />
           <Route path="inspector" element={<InspectorPage />} />
+          <Route path="documents" element={<InspectorPage />} />
           <Route path="ledger" element={<LedgerPage />} />
+          <Route path="audit" element={<LedgerPage />} />
+          <Route path="tenders" element={<DashboardPage />} />
           <Route path="supabase-test" element={<SupabaseTestPage />} />
           <Route path="*" element={<Navigate to="/checklist" replace />} />
         </Route>
