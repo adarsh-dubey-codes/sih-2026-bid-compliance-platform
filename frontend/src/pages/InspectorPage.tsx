@@ -1,23 +1,78 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { recordDecision, fetchDashboardStats } from '../services/api';
+import { StatusBadge } from '../components/common/StatusBadge';
 
 interface OutletContextType {
   showToast: (msg: string) => void;
 }
 
+interface EvidenceDocument {
+  id: string;
+  name: string;
+  type: string;
+  status: 'verified' | 'warning' | 'error';
+  statusLabel: string;
+  source: string;
+  timestamp: string;
+  extractedData: string;
+  verificationResult: string;
+  clause: string;
+}
+
 export const InspectorPage: React.FC = () => {
   const { showToast } = useOutletContext<OutletContextType>();
-  const [selectedDoc, setSelectedDoc] = useState<string>('Experience_Cert_GAIL_P2.pdf');
+  const [selectedDocId, setSelectedDocId] = useState<string>('DOC-01');
   const [inspectionMode, setInspectionMode] = useState<'bounding' | 'raw' | 'trace' | 'diff'>('bounding');
   const [officerDecision, setOfficerDecision] = useState<'clarify' | 'reject' | 'overrule'>('clarify');
   const [officerPin, setOfficerPin] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [showTechnicalDetails, setShowTechnicalDetails] = useState<boolean>(false);
 
+  const documentList: EvidenceDocument[] = [
+    {
+      id: 'DOC-01',
+      name: 'Experience_Cert_GAIL_P2.pdf',
+      type: 'Technical Experience Certificate',
+      status: 'warning',
+      statusLabel: 'Issues Found',
+      source: 'GAIL (India) Limited Escrow Registry',
+      timestamp: '04-Sep-2026 14:22 IST',
+      extractedData: 'Issued to: M/s Apex Pipeline LLC | Duration: 4.2 Years (Jan 2020 - Mar 2024)',
+      verificationResult: 'Name Mismatch Flagged (Apex Pipeline LLC vs Apex InfraTech Solutions)',
+      clause: 'Clause 4.1'
+    },
+    {
+      id: 'DOC-02',
+      name: 'Audited_Financials_FY24.pdf',
+      type: 'Financial Turnover Certificate',
+      status: 'verified',
+      statusLabel: 'Verified',
+      source: 'ICAI Chartered Accountant Registry',
+      timestamp: '04-Sep-2026 11:05 IST',
+      extractedData: 'Average Annual Turnover: ₹42.8 Crore | UDIN: 24089123A000182',
+      verificationResult: 'Meets minimum ₹25 Crore requirement',
+      clause: 'Clause 3.2'
+    },
+    {
+      id: 'DOC-03',
+      name: 'GST_Registration_Certificate.pdf',
+      type: 'Statutory GST Registration',
+      status: 'verified',
+      statusLabel: 'Verified',
+      source: 'GSTN Government Gateway API',
+      timestamp: '04-Sep-2026 09:12 IST',
+      extractedData: 'GSTIN: 07AAAAC1234D1Z5 | Legal Name: Apex InfraTech Solutions Pvt Ltd',
+      verificationResult: 'Active GSTIN Verified',
+      clause: 'Clause 1.4'
+    },
+  ];
+
+  const currentDoc = documentList.find(d => d.id === selectedDocId) || documentList[0];
+
   const handleExecuteOfficerOrder = async () => {
     if (!officerPin || officerPin.length < 4) {
-      showToast('Please enter your 6-Digit Officer DSC PIN to execute order.');
+      showToast('Please enter your 6-Digit Officer PIN to execute order.');
       return;
     }
     const decisionCode = officerDecision === 'clarify' ? 'REQUEST_CLARIFICATION' : officerDecision === 'reject' ? 'REJECT' : 'APPROVE';
@@ -38,237 +93,270 @@ export const InspectorPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-slate-100 p-4 lg:p-8 space-y-6">
-      {/* 1. DOCUMENT NAME & REVIEW STATUS HEADER */}
-      <div className="bg-white border border-slate-300 rounded-lg p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 font-data text-[11px] uppercase font-bold text-slate-500">
-            <span>STEP 2: DOCUMENT REVIEW</span>
-            <span className="opacity-40">•</span>
-            <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-bold">
-              1 ISSUE DETECTED
-            </span>
-          </div>
-          <h1 className="text-[22px] font-display font-bold text-slate-900 mt-1">
-            {selectedDoc}
-          </h1>
-          <div className="text-[12px] text-slate-600 font-sans mt-0.5">
-            Technical Experience Certificate • Clause 4.1 Audit
-          </div>
+          <h1 className="text-[26px] font-bold text-[#17152B] tracking-tight">Document Review</h1>
+          <p className="text-[14px] text-[#66627A] mt-0.5">Inspect extracted evidence and AI compliance analysis.</p>
         </div>
-
         <div className="flex items-center gap-3">
-          <select
-            value={selectedDoc}
-            onChange={(e) => setSelectedDoc(e.target.value)}
-            className="h-9 px-3 bg-slate-50 font-bold text-[12px] font-data border border-slate-300 rounded-md focus:outline-none focus:border-slate-800"
+          <button
+            onClick={() => showToast(`Downloading ${currentDoc.name}...`)}
+            className="px-4 py-2 bg-white border border-[#E5E2EC] text-[#17152B] text-[13px] font-medium rounded-lg hover:bg-[#F8F9FC] transition-colors flex items-center gap-2"
           >
-            <option value="Experience_Cert_GAIL_P2.pdf">Experience_Cert_GAIL_P2.pdf (Issue Flagged)</option>
-            <option value="Audited_FY24-25.pdf">Audited_FY24-25.pdf (Verified)</option>
-            <option value="GST_Certificate.pdf">GST_Certificate.pdf (Verified)</option>
-          </select>
-          <button onClick={() => showToast(`Downloading ${selectedDoc}...`)} className="px-3 h-9 bg-white border border-slate-300 text-slate-900 text-[12px] font-bold font-data rounded-md">
-            Download PDF
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            <span>Download Document</span>
           </button>
         </div>
       </div>
 
-      {/* 2. AI EXPLANATION PANEL (Answers: What checked? What found? Why flagged? Recommended next action?) */}
-      <div className="bg-amber-50 border border-amber-300 rounded-lg p-5 space-y-3 shadow-xs">
-        <div className="flex items-center justify-between font-data border-b border-amber-200 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-amber-800 text-[20px]">smart_toy</span>
-            <h2 className="font-bold text-amber-950 text-[14px]">AI Findings Summary</h2>
-          </div>
-          <span className="text-[10px] bg-amber-200/80 text-amber-950 font-bold px-2 py-0.5 rounded border border-amber-400">
-            ISSUE DETECTED
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-[12px]">
-          {/* What was checked? */}
-          <div className="bg-white p-3 rounded border border-amber-200 space-y-1">
-            <div className="text-[10px] font-bold uppercase text-slate-500 font-data">1. What Was Checked?</div>
-            <div className="font-bold text-slate-900">Clause 4.1 Experience Entity Match</div>
-            <div className="text-slate-600 text-[11px]">Experience Certificate vs GST Legal Name</div>
-          </div>
-
-          {/* What was found? */}
-          <div className="bg-white p-3 rounded border border-amber-200 space-y-1">
-            <div className="text-[10px] font-bold uppercase text-slate-500 font-data">2. What Was Found?</div>
-            <div className="font-bold text-red-900">Apex Pipeline LLC</div>
-            <div className="text-slate-600 text-[11px]">Bidder Name: Apex InfraTech Solutions</div>
-          </div>
-
-          {/* Why was it flagged? */}
-          <div className="bg-white p-3 rounded border border-amber-200 space-y-1">
-            <div className="text-[10px] font-bold uppercase text-slate-500 font-data">3. Why Flagged?</div>
-            <div className="font-bold text-amber-900">Legal Name Mismatch</div>
-            <div className="text-slate-600 text-[11px]">Match Score: 68.1% (Below 90% Threshold)</div>
-          </div>
-
-          {/* Recommended Action */}
-          <div className="bg-white p-3 rounded border border-amber-200 space-y-1">
-            <div className="text-[10px] font-bold uppercase text-slate-500 font-data">4. Recommended Next Action</div>
-            <div className="font-bold text-slate-900">Issue 48-Hr Clarification</div>
-            <div className="text-slate-600 text-[11px]">Request Consortium Deed or M&A Proof</div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. SUPPORTING EVIDENCE (Highlighted Document & View Modes) */}
+      {/* Main 2-Column Clean Layout according to Section 7 */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Highlighted Document Preview */}
-        <div className="lg:col-span-7 bg-white border border-slate-300 rounded-lg overflow-hidden shadow-xs space-y-3 p-4">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-            <h3 className="font-display font-bold text-slate-900 text-[15px]">Supporting Evidence (Highlighted Document)</h3>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center bg-slate-100 p-0.5 rounded border border-slate-300 font-data text-[10px]">
-                {(['bounding', 'raw', 'trace', 'diff'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setInspectionMode(mode)}
-                    className={`px-2 py-0.5 font-bold rounded capitalize ${
-                      inspectionMode === mode ? 'bg-[#0B192C] text-white' : 'text-slate-600'
-                    }`}
-                  >
-                    {mode === 'bounding' && 'Highlighted Evidence'}
-                    {mode === 'raw' && 'Extracted Data'}
-                    {mode === 'trace' && 'Compliance Checker'}
-                    {mode === 'diff' && 'Document Comparison'}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center bg-slate-100 rounded border border-slate-300 font-data text-[10px]">
-                <button 
-                  onClick={() => setZoomLevel((z) => Math.max(75, z - 10))} 
-                  className="px-2 py-0.5 text-slate-700 hover:bg-slate-200 font-bold border-r border-slate-300"
-                >
-                  -
-                </button>
-                <span className="px-2 py-0.5 text-slate-700 font-bold">{zoomLevel}%</span>
-                <button 
-                  onClick={() => setZoomLevel((z) => Math.min(150, z + 10))} 
-                  className="px-2 py-0.5 text-slate-700 hover:bg-slate-200 font-bold border-l border-slate-300"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* LEFT COLUMN (4 Cols): Document & Evidence Selector */}
+        <div className="lg:col-span-4 bg-white border border-[#E5E2EC] rounded-[12px] p-5 space-y-4">
+          <h2 className="text-[15px] font-bold text-[#17152B] border-b border-[#E5E2EC] pb-3">
+            Submitted Evidence Files
+          </h2>
 
-          <div className="bg-slate-200 p-4 rounded border border-slate-300 min-h-[480px] flex items-center justify-center overflow-auto">
-            <div 
-              className="w-full bg-white shadow-md p-6 border border-slate-400 space-y-4 font-sans transition-transform duration-200"
-              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
-            >
-              <div className="flex justify-between items-center bg-slate-100 p-2.5 rounded border border-slate-300">
-                <div>
-                  <div className="font-display font-bold text-[#0B192C] text-[15px]">GAIL (INDIA) LIMITED</div>
-                  <div className="text-[9px] uppercase font-data font-bold text-slate-500">Government Undertaking</div>
+          <div className="space-y-2.5">
+            {documentList.map(doc => (
+              <div
+                key={doc.id}
+                onClick={() => setSelectedDocId(doc.id)}
+                className={`p-4 rounded-lg border cursor-pointer transition-colors space-y-2 ${
+                  selectedDocId === doc.id
+                    ? 'border-[#4527A0] bg-[#F3E8FF]/30'
+                    : 'border-[#E5E2EC] hover:bg-[#F8F9FC]'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-[13px] text-[#17152B] truncate max-w-[180px]">
+                    {doc.name}
+                  </span>
+                  <StatusBadge status={doc.status} label={doc.statusLabel} />
                 </div>
-                <div className="text-right font-data text-[9px] text-slate-600">Ref: GAIL/HVJ/PROJ/2024</div>
-              </div>
-
-              <h4 className="text-center font-display font-bold text-[16px] uppercase underline text-slate-900">
-                Satisfactory Execution Certificate
-              </h4>
-
-              <div className="p-3 bg-amber-50 border-2 border-slate-800 rounded relative">
-                <div className="absolute -top-3 left-3 bg-[#0B192C] text-amber-400 text-[9px] px-2 py-0.5 rounded font-data font-bold">
-                  HIGHLIGHTED ISSUE: ENTITY NAME
-                </div>
-                <p className="text-[13px] text-slate-900 pt-1 font-sans">
-                  Issued in favor of <mark className="bg-red-200 text-red-900 font-bold px-1 rounded border border-red-400">M/s Apex Pipeline LLC</mark> for 142.8 KM gas trunkline expansion.
-                </p>
-                <div className="mt-2 pt-2 border-t border-slate-300 flex items-center justify-between font-data text-[10px] text-red-900 font-bold">
-                  <span>Bidder Record: Apex InfraTech Solutions Pvt Ltd</span>
-                  <span>Match: 68.1%</span>
+                <div className="text-[12px] text-[#66627A]">{doc.type}</div>
+                <div className="text-[11px] text-[#66627A] font-mono pt-1 border-t border-[#E5E2EC]">
+                  Clause: {doc.clause}
                 </div>
               </div>
-
-              <p className="text-[12px] text-slate-700 font-sans leading-relaxed">
-                Total continuous contract period: 4.2 years (Jan 2020 - Mar 2024). Operational performance met API 1104 standards.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Right Column: Officer Action Panel */}
-        <div className="lg:col-span-5 bg-white border border-slate-300 rounded-lg p-5 shadow-xs space-y-4">
-          <div className="border-b border-slate-200 pb-2">
-            <h3 className="font-display font-bold text-slate-900 text-[16px]">Step 4: Officer Action</h3>
-            <p className="text-[12px] text-slate-600">Choose action to resolve the detected issue.</p>
+        {/* RIGHT COLUMN (8 Cols): Selected Evidence Details & AI Findings */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Document Overview Section */}
+          <div className="bg-white border border-[#E5E2EC] rounded-[12px] p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5E2EC] pb-4">
+              <div>
+                <h2 className="text-[18px] font-bold text-[#17152B]">{currentDoc.name}</h2>
+                <p className="text-[13px] text-[#66627A] mt-0.5">{currentDoc.type}</p>
+              </div>
+              <StatusBadge status={currentDoc.status} label={currentDoc.statusLabel} />
+            </div>
+
+            {/* Structured Evidence Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px] pt-1">
+              <div>
+                <span className="text-[#66627A] text-[12px]">Source Gateway:</span>
+                <div className="font-medium text-[#17152B] mt-0.5">{currentDoc.source}</div>
+              </div>
+              <div>
+                <span className="text-[#66627A] text-[12px]">Timestamp Verified:</span>
+                <div className="font-medium text-[#17152B] mt-0.5">{currentDoc.timestamp}</div>
+              </div>
+              <div className="sm:col-span-2">
+                <span className="text-[#66627A] text-[12px]">Extracted Information:</span>
+                <div className="font-mono text-[12px] bg-[#F8F9FC] border border-[#E5E2EC] p-3 rounded-lg text-[#17152B] mt-1">
+                  {currentDoc.extractedData}
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <span className="text-[#66627A] text-[12px]">Verification Result:</span>
+                <div className="font-medium text-[#17152B] mt-0.5">{currentDoc.verificationResult}</div>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2 text-[12px]">
-            <label className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-300 rounded-md cursor-pointer">
-              <input type="radio" checked={officerDecision === 'clarify'} onChange={() => setOfficerDecision('clarify')} />
-              <div>
-                <div className="font-bold text-slate-900">Issue 48-Hour Notice</div>
-                <div className="text-[11px] text-slate-600">Request Consortium Deed or M&A proof from bidder.</div>
+          {/* AI Explanation Panel */}
+          {currentDoc.status === 'warning' && (
+            <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-[12px] p-6 space-y-4">
+              <div className="flex items-center gap-2 text-[#B45309]">
+                <span className="material-symbols-outlined text-[20px]">smart_toy</span>
+                <h3 className="font-bold text-[15px]">AI Decision Breakdown</h3>
               </div>
-            </label>
 
-            <label className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-300 rounded-md cursor-pointer">
-              <input type="radio" checked={officerDecision === 'reject'} onChange={() => setOfficerDecision('reject')} />
-              <div>
-                <div className="font-bold text-red-900">Reject Bid</div>
-                <div className="text-[11px] text-slate-600">Confirm disqualification under Clause 4.1.</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px]">
+                <div className="bg-white p-3.5 rounded-lg border border-[#FDE68A] space-y-1">
+                  <div className="text-[11px] font-semibold uppercase text-[#66627A]">What was checked?</div>
+                  <div className="font-medium text-[#17152B]">Minimum 5 Years Experience</div>
+                </div>
+                <div className="bg-white p-3.5 rounded-lg border border-[#FDE68A] space-y-1">
+                  <div className="text-[11px] font-semibold uppercase text-[#66627A]">What was found?</div>
+                  <div className="font-medium text-[#B91C1C]">4.2 Years (Apex Pipeline LLC)</div>
+                </div>
+                <div className="bg-white p-3.5 rounded-lg border border-[#FDE68A] space-y-1">
+                  <div className="text-[11px] font-semibold uppercase text-[#66627A]">Why was it flagged?</div>
+                  <div className="font-medium text-[#B45309]">Name Mismatch & Duration Under 5.0 Yrs</div>
+                </div>
+                <div className="bg-white p-3.5 rounded-lg border border-[#FDE68A] space-y-1">
+                  <div className="text-[11px] font-semibold uppercase text-[#66627A]">Recommended Action</div>
+                  <div className="font-medium text-[#17152B]">Request clarification from bidder.</div>
+                </div>
               </div>
-            </label>
+            </div>
+          )}
 
-            <label className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-300 rounded-md cursor-pointer">
-              <input type="radio" checked={officerDecision === 'overrule'} onChange={() => setOfficerDecision('overrule')} />
-              <div>
-                <div className="font-bold text-slate-900">Approve Document</div>
-                <div className="text-[11px] text-slate-600">Overrule flag after manual verification.</div>
+          {/* Highlighted Evidence Viewer & Zoom Controls */}
+          <div className="bg-white border border-[#E5E2EC] rounded-[12px] p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E5E2EC] pb-3">
+              <h3 className="font-bold text-[#17152B] text-[15px]">Highlighted Evidence Document</h3>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center bg-[#F8F9FC] border border-[#E5E2EC] rounded-lg p-0.5 text-[12px]">
+                  {(['bounding', 'raw', 'trace', 'diff'] as const).map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => setInspectionMode(mode)}
+                      className={`px-3 py-1 rounded-md font-medium capitalize ${
+                        inspectionMode === mode
+                          ? 'bg-[#4527A0] text-white'
+                          : 'text-[#66627A] hover:text-[#17152B]'
+                      }`}
+                    >
+                      {mode === 'bounding' && 'Highlighted Evidence'}
+                      {mode === 'raw' && 'Extracted Data'}
+                      {mode === 'trace' && 'Compliance Checker'}
+                      {mode === 'diff' && 'Document Comparison'}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center bg-[#F8F9FC] border border-[#E5E2EC] rounded-lg text-[12px]">
+                  <button
+                    onClick={() => setZoomLevel(z => Math.max(75, z - 10))}
+                    className="px-2.5 py-1 text-[#66627A] font-bold border-r border-[#E5E2EC] hover:bg-[#E5E2EC]"
+                  >
+                    -
+                  </button>
+                  <span className="px-2.5 py-1 text-[#17152B] font-medium">{zoomLevel}%</span>
+                  <button
+                    onClick={() => setZoomLevel(z => Math.min(150, z + 10))}
+                    className="px-2.5 py-1 text-[#66627A] font-bold border-l border-[#E5E2EC] hover:bg-[#E5E2EC]"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
-            </label>
+            </div>
+
+            {/* Document Render Box */}
+            <div className="bg-[#F8F9FC] p-6 rounded-lg border border-[#E5E2EC] min-h-[400px] flex items-center justify-center overflow-auto">
+              <div
+                className="w-full bg-white shadow-sm p-6 border border-[#E5E2EC] space-y-4 transition-transform duration-200"
+                style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+              >
+                <div className="flex justify-between items-center bg-[#F8F9FC] p-3 rounded-lg border border-[#E5E2EC]">
+                  <div>
+                    <div className="font-bold text-[#17152B] text-[15px]">GAIL (INDIA) LIMITED</div>
+                    <div className="text-[10px] text-[#66627A] uppercase">Government Undertaking</div>
+                  </div>
+                  <div className="text-right text-[11px] text-[#66627A] font-mono">Ref: GAIL/HVJ/PROJ/2024</div>
+                </div>
+
+                <h4 className="text-center font-bold text-[16px] uppercase underline text-[#17152B]">
+                  Satisfactory Execution Certificate
+                </h4>
+
+                <div className="p-4 bg-[#FFFBEB] border-2 border-[#17152B] rounded-lg relative">
+                  <div className="absolute -top-3 left-3 bg-[#4527A0] text-white text-[10px] px-2 py-0.5 rounded font-semibold">
+                    HIGHLIGHTED EVIDENCE
+                  </div>
+                  <p className="text-[13px] text-[#17152B] pt-1">
+                    Issued in favor of <mark className="bg-[#FEF2F2] text-[#B91C1C] font-bold px-1 rounded border border-[#FECACA]">M/s Apex Pipeline LLC</mark> for 142.8 KM gas trunkline expansion.
+                  </p>
+                  <div className="mt-2 pt-2 border-t border-[#E5E2EC] flex items-center justify-between text-[11px] text-[#B91C1C] font-medium">
+                    <span>Bidder Name: Apex InfraTech Solutions Pvt Ltd</span>
+                    <span>Match: 68.1%</span>
+                  </div>
+                </div>
+
+                <p className="text-[13px] text-[#66627A] leading-relaxed">
+                  Total continuous contract period: 4.2 years (Jan 2020 - Mar 2024). Operational performance met API 1104 standards.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-200 space-y-2">
-            <label className="text-[11px] font-bold font-data text-slate-700 uppercase">Enter Officer DSC PIN to Execute</label>
-            <div className="flex gap-2">
+          {/* Officer Action Form */}
+          <div className="bg-white border border-[#E5E2EC] rounded-[12px] p-6 space-y-4">
+            <h3 className="font-bold text-[#17152B] text-[16px] border-b border-[#E5E2EC] pb-2">Officer Action</h3>
+
+            <div className="space-y-3 text-[13px]">
+              <label className="flex items-center gap-3 p-3.5 bg-[#F8F9FC] border border-[#E5E2EC] rounded-lg cursor-pointer">
+                <input type="radio" checked={officerDecision === 'clarify'} onChange={() => setOfficerDecision('clarify')} />
+                <div>
+                  <div className="font-semibold text-[#17152B]">Request Clarification</div>
+                  <div className="text-[12px] text-[#66627A]">Request bidder to upload Consortium Deed or M&A proof.</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-3.5 bg-[#F8F9FC] border border-[#E5E2EC] rounded-lg cursor-pointer">
+                <input type="radio" checked={officerDecision === 'reject'} onChange={() => setOfficerDecision('reject')} />
+                <div>
+                  <div className="font-semibold text-[#B91C1C]">Reject Bid</div>
+                  <div className="text-[12px] text-[#66627A]">Disqualify bid due to Clause 4.1 non-compliance.</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-3.5 bg-[#F8F9FC] border border-[#E5E2EC] rounded-lg cursor-pointer">
+                <input type="radio" checked={officerDecision === 'overrule'} onChange={() => setOfficerDecision('overrule')} />
+                <div>
+                  <div className="font-semibold text-[#17152B]">Approve Document</div>
+                  <div className="text-[12px] text-[#66627A]">Accept document after manual verification.</div>
+                </div>
+              </label>
+            </div>
+
+            <div className="pt-3 border-t border-[#E5E2EC] flex items-center gap-3">
               <input
                 type="password"
                 maxLength={6}
                 value={officerPin}
                 onChange={(e) => setOfficerPin(e.target.value)}
-                placeholder="6-Digit PIN"
-                className="h-9 px-3 border border-slate-300 rounded-md font-data text-[13px] bg-slate-50 w-full"
+                placeholder="6-Digit Officer PIN"
+                className="h-10 px-4 border border-[#E5E2EC] rounded-lg font-mono text-[14px] bg-[#F8F9FC] focus:outline-none focus:border-[#4527A0] w-48"
               />
               <button
                 onClick={handleExecuteOfficerOrder}
-                className="px-4 h-9 bg-[#0B192C] text-white text-[12px] font-bold font-data rounded-md hover:bg-[#1E3A5F] shrink-0"
+                className="px-5 h-10 bg-[#4527A0] text-white text-[13px] font-medium rounded-lg hover:bg-[#5E35B1] transition-colors"
               >
-                Execute Order
+                Submit Officer Decision
               </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* 4. TECHNICAL DETAILS (COLLAPSED BY DEFAULT) */}
-      <div className="bg-white border border-slate-300 rounded-lg p-4 shadow-xs space-y-3">
-        <button
-          onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
-          className="w-full flex items-center justify-between text-left font-data text-[12px] font-bold text-slate-700 hover:text-slate-900"
-        >
-          <span className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px]">code</span>
-            <span>Technical Details & Raw OCR Data (Advanced)</span>
-          </span>
-          <span className="material-symbols-outlined text-[18px]">
-            {showTechnicalDetails ? 'expand_less' : 'expand_more'}
-          </span>
-        </button>
+          {/* Technical Details Accordion (Collapsed by Default) */}
+          <div className="bg-white border border-[#E5E2EC] rounded-[12px] p-5 space-y-3">
+            <button
+              onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+              className="w-full flex items-center justify-between text-left text-[13px] font-semibold text-[#66627A] hover:text-[#17152B]"
+            >
+              <span className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">code</span>
+                <span>Technical Details (Collapsed)</span>
+              </span>
+              <span className="material-symbols-outlined text-[20px]">
+                {showTechnicalDetails ? 'expand_less' : 'expand_more'}
+              </span>
+            </button>
 
-        {showTechnicalDetails && (
-          <div className="pt-3 border-t border-slate-200 space-y-3 font-data text-[11px]">
-            <div className="bg-slate-900 text-slate-200 p-3 rounded overflow-x-auto">
-              <pre>{`{
-  "document_id": "Experience_Cert_GAIL_P2.pdf",
+            {showTechnicalDetails && (
+              <div className="pt-3 border-t border-[#E5E2EC] font-mono text-[12px]">
+                <div className="bg-[#17152B] text-white p-4 rounded-lg overflow-x-auto">
+                  <pre>{`{
+  "document_id": "${currentDoc.name}",
   "ocr_engine": "PaddleOCR v2.6",
   "confidence_score": 97.4,
   "bounding_box": {"x": 120, "y": 450, "w": 280, "h": 65},
@@ -278,10 +366,13 @@ export const InspectorPage: React.FC = () => {
   "rule_evaluated": "RULE-TECH-EXP-01",
   "status": "FLAGGED_MISMATCH"
 }`}</pre>
-            </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
 };
+

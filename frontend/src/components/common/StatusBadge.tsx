@@ -1,7 +1,7 @@
 import React from 'react';
 
 export interface StatusBadgeProps {
-  status: 'verified' | 'warning' | 'error' | 'expired' | 'success' | 'notice' | 'critical' | 'low' | 'medium';
+  status: 'verified' | 'warning' | 'error' | 'expired' | 'success' | 'notice' | 'critical' | 'low' | 'medium' | 'info';
   label: string;
   icon?: string;
   className?: string;
@@ -13,17 +13,18 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label, icon, c
       case 'verified':
       case 'success':
       case 'low':
-        return 'bg-emerald-950/10 border-emerald-700/40 text-emerald-800 font-semibold';
+        return 'bg-[#ECFDF5] border-[#A7F3D0] text-[#047857] font-semibold';
       case 'warning':
       case 'medium':
       case 'notice':
-        return 'bg-amber-950/10 border-amber-600/40 text-amber-900 font-semibold';
+        return 'bg-[#FFFBEB] border-[#FDE68A] text-[#B45309] font-semibold';
       case 'error':
       case 'critical':
       case 'expired':
-        return 'bg-red-950/10 border-red-700/40 text-red-900 font-bold';
+        return 'bg-[#FEF2F2] border-[#FECACA] text-[#B91C1C] font-semibold';
+      case 'info':
       default:
-        return 'bg-slate-100 border-slate-300 text-slate-700 font-medium';
+        return 'bg-[#F3E8FF] border-[#E9D5FF] text-[#4527A0] font-semibold';
     }
   };
 
@@ -32,13 +33,13 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label, icon, c
       case 'verified':
       case 'success':
       case 'low':
-        return 'verified';
+        return 'check_circle';
       case 'warning':
       case 'medium':
         return 'warning';
       case 'error':
       case 'critical':
-        return 'gavel';
+        return 'cancel';
       case 'expired':
         return 'history';
       default:
@@ -50,10 +51,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label, icon, c
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] uppercase tracking-wider ${getBadgeStyle()} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-medium tracking-tight ${getBadgeStyle()} ${className}`}
     >
       {activeIcon && <span className="material-symbols-outlined text-[13px] shrink-0">{activeIcon}</span>}
       <span>{label}</span>
     </span>
   );
 };
+
