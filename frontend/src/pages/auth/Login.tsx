@@ -3,18 +3,35 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 export const Login: React.FC = () => {
-  const { signIn } = useAuth();
+  const { signIn, resendVerificationEmail, startDemoSession } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  const startCooldownTimer = (seconds: number = 60) => {
+    setCooldown(seconds);
+    const interval = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
 
     if (!email.includes('@') || !email.includes('.')) {
       setErrorMessage('Please enter a valid official email address');
@@ -30,6 +47,35 @@ export const Login: React.FC = () => {
     } else {
       navigate('/checklist');
     }
+  };
+
+  const handleResend = async () => {
+    if (!email) {
+      setErrorMessage('Please enter your email address to resend confirmation.');
+      return;
+    }
+    if (cooldown > 0) return;
+
+    setErrorMessage('');
+    setSuccessMessage('');
+    setIsResending(true);
+    const { error } = await resendVerificationEmail(email);
+    setIsResending(false);
+
+    if (error) {
+      setErrorMessage(error.message || 'Failed to resend confirmation email');
+      if (error.isRateLimited) {
+        startCooldownTimer(60);
+      }
+    } else {
+      setSuccessMessage('Verification email sent! Check your inbox.');
+      startCooldownTimer(60);
+    }
+  };
+
+  const handleDemoAccess = () => {
+    startDemoSession('PROCUREMENT_OFFICER', 'Dr. S. K. Sharma (GAIL Official)', email || 'officer@mopng.gov.in');
+    navigate('/checklist');
   };
 
   return (
@@ -51,10 +97,40 @@ export const Login: React.FC = () => {
 
         {/* Form Container */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {successMessage && (
+            <div className="p-3 bg-emerald-50 border border-emerald-300 rounded text-[12px] text-emerald-900 font-bold font-data flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">check_circle</span>
+              <span>{successMessage}</span>
+            </div>
+          )}
+
           {errorMessage && (
-            <div className="p-3 bg-red-50 border border-red-300 rounded text-[12px] text-red-900 font-bold font-data flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px]">error</span>
-              <span>{errorMessage}</span>
+            <div className="p-3 bg-red-50 border border-red-300 rounded text-[12px] text-red-900 font-bold font-data space-y-2">
+              <div className="flex items-start gap-2">
+                <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">error</span>
+                <span>{errorMessage}</span>
+              </div>
+              <div className="flex gap-2 pt-1 border-t border-red-200">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={isResending || cooldown > 0}
+                  className="px-2 py-1 bg-white border border-red-300 rounded text-[11px] font-bold text-red-900 hover:bg-red-100 disabled:opacity-50"
+                >
+                  {isResending
+                    ? 'Resending...'
+                    : cooldown > 0
+                    ? `Resend in ${cooldown}s`
+                    : 'Resend Verification Email'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDemoAccess}
+                  className="px-2 py-1 bg-[#0B192C] text-amber-400 rounded text-[11px] font-bold hover:bg-slate-800"
+                >
+                  Demo Quick Access
+                </button>
+              </div>
             </div>
           )}
 
@@ -135,6 +211,24 @@ export const Login: React.FC = () => {
               </>
             )}
           </button>
+
+          {/* SIH Demo Mode Banner / Bypass Button */}
+          <div className="p-3 bg-amber-50 border border-amber-300 rounded text-center space-y-1.5">
+            <div className="text-[11px] font-data font-bold text-amber-900 uppercase tracking-wide flex items-center justify-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px]">bolt</span>
+              <span>Localhost & SIH Demo Quick Access</span>
+            </div>
+            <p className="text-[11px] text-slate-600">
+              Bypass external SMTP rate limits and launch instantly into local workspace:
+            </p>
+            <button
+              type="button"
+              onClick={handleDemoAccess}
+              className="w-full py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-data text-[11px] font-bold uppercase tracking-wider rounded transition-colors"
+            >
+              Launch Local Demo Session (GAIL Officer)
+            </button>
+          </div>
 
           <div className="pt-2 text-center text-[12px] text-slate-600 border-t border-slate-200">
             Need an account?{' '}

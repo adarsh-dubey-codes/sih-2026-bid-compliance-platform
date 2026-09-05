@@ -8,9 +8,25 @@ export const ForgotPassword: React.FC = () => {
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  const startCooldownTimer = (seconds: number = 60) => {
+    setCooldown(seconds);
+    const interval = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (cooldown > 0) return;
+
     setMessage('');
     setErrorMessage('');
     setIsSubmitting(true);
@@ -20,8 +36,10 @@ export const ForgotPassword: React.FC = () => {
 
     if (error) {
       setErrorMessage(error.message || 'Failed to dispatch reset instructions');
+      startCooldownTimer(60);
     } else {
       setMessage('Password reset instructions dispatched to your official email.');
+      startCooldownTimer(60);
     }
   };
 
@@ -53,7 +71,7 @@ export const ForgotPassword: React.FC = () => {
 
           {errorMessage && (
             <div className="p-3 bg-red-50 border border-red-300 rounded text-[12px] text-red-900 font-bold font-data flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px]">error</span>
+              <span className="material-symbols-outlined text-[16px] shrink-0">error</span>
               <span>{errorMessage}</span>
             </div>
           )}
@@ -74,7 +92,7 @@ export const ForgotPassword: React.FC = () => {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || cooldown > 0}
             className="w-full h-10 bg-[#0B192C] text-white font-data text-[12px] font-bold uppercase tracking-wider rounded hover:bg-[#1E3A5F] transition-colors flex items-center justify-center gap-2 shadow-xs disabled:bg-slate-400"
           >
             {isSubmitting ? (
@@ -82,6 +100,8 @@ export const ForgotPassword: React.FC = () => {
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 <span>Dispatching Reset Email...</span>
               </>
+            ) : cooldown > 0 ? (
+              <span>Retry Cooldown ({cooldown}s)</span>
             ) : (
               <>
                 <span className="material-symbols-outlined text-[16px]">send</span>

@@ -23,9 +23,35 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<{ data?: any; error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  resendVerificationEmail: (email: string) => Promise<{ error: any }>;
+  startDemoSession: (roleChoice?: UserRole, fullName?: string, email?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const formatAuthError = (error: any) => {
+  if (!error) return null;
+  const msg = error.message?.toLowerCase() || '';
+  const status = error.status || error.code;
+
+  if (status === 429 || msg.includes('rate limit') || msg.includes('too many requests') || msg.includes('over_email_send_rate_limit')) {
+    return {
+      ...error,
+      message: 'Supabase Email Rate Limit Exceeded (429). Email sending is temporarily throttled by Supabase. Please wait 60 seconds or use Demo Quick Access.',
+      isRateLimited: true,
+    };
+  }
+
+  if (msg.includes('email not confirmed')) {
+    return {
+      ...error,
+      message: 'Email confirmation is pending in Supabase Auth. Please check your inbox, or disable "Confirm Email" in Supabase Dashboard → Auth → Providers → Email.',
+      isEmailUnconfirmed: true,
+    };
+  }
+
+  return error;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -33,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<UserRole>('PROCUREMENT_OFFICER');
   const [loading, setLoading] = useState<boolean>(true);
+  const [lastEmailSentTime, setLastEmailSentTime] = useState<number>(0);
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
     try {
@@ -46,7 +73,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(data as UserProfile);
         setRole(data.role as UserRole);
       } else {
-        // Fallback default profile if profiles table not populated yet
         const defaultProf: UserProfile = {
           id: userId,
           full_name: userEmail?.split('@')[0] || 'Government Official',
@@ -62,7 +88,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // 1. Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -72,7 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // 2. Listen to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -93,16 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      const isEmailUnconfirmed = error.message?.toLowerCase().includes('email not confirmed');
-      if (isEmailUnconfirmed) {
-        return {
-          error: {
-            ...error,
-            message: 'Email confirmation pending in Supabase. Please check your inbox or disable "Confirm Email" in Supabase Auth Settings.',
-            isEmailUnconfirmed: true
-          }
-        };
-      }
+      return { error: formatAuthError(error) };
     }
     if (data?.session) {
       setSession(data.session);
@@ -111,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchProfile(data.user.id, data.user.email);
       }
     }
-    return { error };
+    return { error: null };
   };
 
   const signUp = async (email: string, password: string, fullName: string, roleChoice: UserRole) => {
@@ -126,8 +141,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
     });
 
-    if (!error && data.user) {
-      // Upsert profile row in profiles table
+    if (error) {
+      return { data: null, error: formatAuthError(error) };
+    }
+
+    if (data?.user) {
       try {
         await supabase.from('profiles').upsert([
           {
@@ -138,10 +156,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
         ]);
       } catch {
-        // Table trigger on_auth_user_created also inserts this profile automatically
+        // Trigger handle_new_user handles fallback
       }
 
-      // If user session is returned (email confirmation disabled in Supabase), update local state
       if (data.session) {
         setSession(data.session);
         setUser(data.user);
@@ -155,18 +172,98 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    return { data, error };
+    return { data, error: null };
+  };
+
+  const resendVerificationEmail = async (email: string) => {
+    const now = Date.now();
+    if (now - lastEmailSentTime < 60000) {
+      const waitSecs = Math.ceil((60000 - (now - lastEmailSentTime)) / 1000);
+      return {
+        error: {
+          message: `Throttled: Please wait ${waitSecs} seconds before requesting another email.`,
+          isRateLimited: true,
+        },
+      };
+    }
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
+
+    if (error) {
+      return { error: formatAuthError(error) };
+    }
+
+    setLastEmailSentTime(now);
+    return { error: null };
+  };
+
+  const resetPassword = async (email: string) => {
+    const now = Date.now();
+    if (now - lastEmailSentTime < 60000) {
+      const waitSecs = Math.ceil((60000 - (now - lastEmailSentTime)) / 1000);
+      return {
+        error: {
+          message: `Throttled: Please wait ${waitSecs} seconds before requesting another password reset.`,
+          isRateLimited: true,
+        },
+      };
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+
+    if (error) {
+      return { error: formatAuthError(error) };
+    }
+
+    setLastEmailSentTime(now);
+    return { error: null };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setProfile(null);
   };
 
-  const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
-    });
-    return { error };
+  const startDemoSession = (
+    roleChoice: UserRole = 'PROCUREMENT_OFFICER',
+    fullName: string = 'Dr. S. K. Sharma (GAIL Official)',
+    email: string = 'officer@mopng.gov.in'
+  ) => {
+    const demoUser: User = {
+      id: 'demo-sovereign-user-id',
+      app_metadata: { provider: 'email' },
+      user_metadata: { full_name: fullName, role: roleChoice },
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+      email,
+    } as any;
+
+    const demoSession: Session = {
+      access_token: 'demo-access-token',
+      token_type: 'bearer',
+      expires_in: 3600,
+      refresh_token: 'demo-refresh-token',
+      user: demoUser,
+    };
+
+    const demoProfile: UserProfile = {
+      id: 'demo-sovereign-user-id',
+      full_name: fullName,
+      email,
+      role: roleChoice,
+    };
+
+    setUser(demoUser);
+    setSession(demoSession);
+    setProfile(demoProfile);
+    setRole(roleChoice);
   };
 
   return (
@@ -181,6 +278,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signOut,
         resetPassword,
+        resendVerificationEmail,
+        startDemoSession,
       }}
     >
       {children}
