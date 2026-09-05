@@ -1,0 +1,15 @@
+{
+  "name": "bid-vishwas-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bid Vishwas - AI-Powered Bid Compliance Platform",
+  "scripts": {
+    "start": "npx concurrently -k -n \"FRONTEND,BACKEND\" -c \"cyan,magenta\" \"npm --prefix frontend run dev\" \"python backend/manage.py runserver 8000\"",
+    "dev": "npx concurrently -k -n \"FRONTEND,BACKEND\" -c \"cyan,magenta\" \"npm --prefix frontend run dev\" \"python backend/manage.py runserver 8000\"",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "python backend/manage.py runserver 8000"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
