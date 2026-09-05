@@ -181,13 +181,16 @@ export const DashboardPage: React.FC = () => {
               {filteredTenders.map((tender, idx) => (
                 <tr
                   key={tender.id}
-                  className={`transition-colors hover:bg-slate-50 ${
+                  onClick={() => navigate('/inspector')}
+                  className={`transition-colors hover:bg-slate-100 cursor-pointer ${
                     idx % 2 === 1 ? 'bg-slate-50/40' : ''
                   }`}
+                  title="Click to open Evidence Analysis for this tender"
                 >
                   <td className="py-3 px-4 align-top">
-                    <div className="font-data text-[11px] font-bold text-slate-900">
-                      {tender.ref}
+                    <div className="font-data text-[11px] font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>{tender.ref}</span>
+                      <span className="text-[9px] bg-slate-100 text-slate-700 px-1 border rounded">STAGE 02</span>
                     </div>
                     <div className="font-display font-semibold text-slate-900 text-[13px] mt-0.5 max-w-md">
                       {tender.title}
@@ -246,11 +249,14 @@ export const DashboardPage: React.FC = () => {
                   <td className="py-3 px-4 align-top text-right">
                     <div className="flex flex-col items-end gap-1">
                       <button
-                        onClick={() => navigate('/inspector')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/inspector');
+                        }}
                         className="px-3 py-1 bg-[#0B192C] text-white rounded-md text-[11px] font-bold hover:bg-[#1E3A5F] flex items-center gap-1"
                       >
-                        <span>Inspect Evidence</span>
-                        <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                        <span>Analyze Evidence</span>
+                        <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
                       </button>
                     </div>
                   </td>

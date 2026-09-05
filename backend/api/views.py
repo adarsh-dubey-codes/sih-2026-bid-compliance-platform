@@ -23,6 +23,16 @@ from .serializers import (
 )
 from .services.ocr_service import OCRService
 from .services.classification_service import DocumentClassificationService
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    return Response({
+        'status': 'ok',
+        'service': 'ProofStack / Bid Vishwas Core Engine',
+        'database': 'Supabase PostgreSQL',
+        'version': '1.0.0'
+    }, status=status.HTTP_200_OK)
 from .services.field_extractor import FieldExtractor
 from .services.verification_service import VerificationService
 from .services.cross_check_service import CrossCheckService
